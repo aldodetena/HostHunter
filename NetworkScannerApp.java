@@ -4,12 +4,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class NetworkScannerApp {
 
@@ -18,6 +22,8 @@ public class NetworkScannerApp {
     private JButton btnScanNetwork;
     private JButton btnCancelScan;
     private volatile boolean isScanning = false;
+    private String selectedNetwork = null;
+    private Queue<String> networkQueue = new LinkedList<>();
 
     public NetworkScannerApp() {
         initialize();
@@ -60,56 +66,71 @@ public class NetworkScannerApp {
         });
     }
 
-    private void scanNetwork(JTextArea textArea, List<String> ipAddressesToScan) {
-        new Thread(new Runnable() {
-            public void run() {
-                textArea.append("Scanning network...\n");
-                for (String host : ipAddressesToScan) {
-                    if (!isScanning) break;
-                    try {
-                        InetAddress address = InetAddress.getByName(host);
-                        if (address.isReachable(1000)) {
-                            textArea.append("Host: " + host + " is reachable.\n");
-                        } else {
-                            textArea.append("Host: " + host + " is not reachable.\n");
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+    private void scanNetwork(JTextArea textArea, String network, int startPort, int endPort) {
+        new Thread(() -> {
+            for (int host = 1; host < 255; host++) {
+                if (!isScanning) {
+                    break;
                 }
-                textArea.append("Network scan completed.\n");
-                isScanning = false;
-                EventQueue.invokeLater(() -> {
-                    btnScanNetwork.setEnabled(true);
-                    btnCancelScan.setEnabled(false);
-                });
+                String hostAddress = network.substring(0, network.lastIndexOf(".") + 1) + host;
+                for (int port = startPort; port <= endPort; port++) {
+                    final int finalPort = port; // Crear una copia final de port para usar en la lambda
+                    new Thread(() -> scanHostPorts(hostAddress, finalPort, finalPort, textArea)).start();
+                }
             }
+            processNextNetwork();
         }).start();
     }
 
     public void listNetworkInterfaces() {
+        List<String> networkAddresses = new ArrayList<>();
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             for (NetworkInterface intf : Collections.list(interfaces)) {
                 if (!intf.isLoopback() && intf.isUp()) {
                     String subnetMask = getSubnetMask(intf);
                     if (!subnetMask.equals("Unavailable")) {
-                        textArea.append("Interface: " + intf.getName() + " - Subnet Mask: " + subnetMask + "\n");
-    
                         Enumeration<InetAddress> addresses = intf.getInetAddresses();
                         for (InetAddress addr : Collections.list(addresses)) {
                             if (addr.isSiteLocalAddress()) {
                                 String networkAddress = calculateNetworkAddress(addr.getHostAddress(), subnetMask);
-                                textArea.append("   Address: " + addr.getHostAddress() + " - Network: " + networkAddress + "\n");
+                                if (!networkAddresses.contains(networkAddress)) {
+                                    networkAddresses.add(networkAddress);
+                                }
                             }
                         }
-                    } else {
-                        textArea.append("Interface: " + intf.getName() + " - Subnet Mask: Unavailable\n");
                     }
                 }
             }
         } catch (SocketException e) {
             e.printStackTrace();
+        }
+    
+        if (!networkAddresses.isEmpty()) {
+            JComboBox<String> networkComboBox = new JComboBox<>(networkAddresses.toArray(new String[0]));
+            JTextField startPortField = new JTextField(5);
+            JTextField endPortField = new JTextField(5);
+    
+            JPanel panel = new JPanel();
+            panel.add(new JLabel("Select a network:"));
+            panel.add(networkComboBox);
+            panel.add(Box.createHorizontalStrut(15)); // Espaciado
+            panel.add(new JLabel("Start Port:"));
+            panel.add(startPortField);
+            panel.add(new JLabel("End Port:"));
+            panel.add(endPortField);
+    
+            int result = JOptionPane.showConfirmDialog(frame, panel, "Network and Port Range Selection", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+    
+            if (result == JOptionPane.OK_OPTION) {
+                selectedNetwork = (String) networkComboBox.getSelectedItem();
+                networkQueue.add(selectedNetwork);
+                if (networkQueue.size() == 1) { // Si la cola solo tenía esta red, comienza el escaneo
+                    processNextNetwork();
+                }
+            }
+        } else {
+            textArea.append("No network interfaces found.\n");
         }
     }
 
@@ -139,6 +160,33 @@ public class NetworkScannerApp {
             return part1 + "." + part2 + "." + part3 + "." + part4;
         } else {
             return "Unavailable";
+        }
+    }
+
+    private void scanHostPorts(String hostAddress, int startPort, int endPort, JTextArea textArea) {
+    for (int port = startPort; port <= endPort; port++) {
+        try {
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(hostAddress, port), 1000); // Tiempo de espera corto
+            socket.close();
+            // Asegúrate de actualizar textArea en el hilo de EventQueue para evitar problemas de concurrencia
+            EventQueue.invokeLater(() -> textArea.append("Host: " + hostAddress + " on port " + port + " is open.\n"));
+        } catch (IOException e) {
+            // Puerto no abierto o no alcanzable, puedes optar por no imprimir nada para estos casos
+        }
+    }
+}
+
+    private void processNextNetwork() {
+        if (!networkQueue.isEmpty()) {
+            String nextNetwork = networkQueue.poll(); // Obtiene y elimina la cabeza de la cola
+            scanNetwork(textArea, nextNetwork, startPort, endPort);
+        } else {
+            textArea.append("All network scans completed.\n");
+            EventQueue.invokeLater(() -> {
+                btnScanNetwork.setEnabled(true);
+                btnCancelScan.setEnabled(false);
+            });
         }
     }
 
