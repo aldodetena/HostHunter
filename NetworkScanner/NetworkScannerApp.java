@@ -24,9 +24,11 @@ public class NetworkScannerApp {
     private JButton btnScanNetwork;
     private JButton btnCancelScan;
     private JProgressBar progressBar;
+    private JPanel networkPanelContainer;
     private volatile boolean isScanning = false;
     private String selectedNetwork = null;
     private Queue<NetworkScanTask> networkQueue = new LinkedList<>();
+    private List<NetworkScanResult> scanResults = new ArrayList<>();
 
     public NetworkScannerApp() {
         initialize();
@@ -46,6 +48,11 @@ public class NetworkScannerApp {
         btnScanNetwork = new JButton("Scan Network");
         btnCancelScan = new JButton("Cancel Scan");
         btnCancelScan.setEnabled(false); // Inicialmente deshabilitado
+
+        networkPanelContainer = new JPanel();
+        networkPanelContainer.setLayout(new BoxLayout(networkPanelContainer, BoxLayout.Y_AXIS));
+        JScrollPane networkPanelScrollPane = new JScrollPane(networkPanelContainer);
+        frame.getContentPane().add(networkPanelScrollPane, BorderLayout.EAST); // Ajusta la posición según necesidad
 
         JPanel panel = new JPanel();
         panel.add(btnScanNetwork);
@@ -76,29 +83,32 @@ public class NetworkScannerApp {
 
     private void scanNetwork(JTextArea textArea, String network, int startPort, int endPort) {
         new Thread(() -> {
-            List<String> reachableHosts = new ArrayList<>();
-            for (int host = 1; host < 255; host++) {
+            NetworkScanResult result = new NetworkScanResult(network);
+    
+            for (int host = 1; host <= 5; host++) {
                 if (!isScanning) {
                     break;
                 }
                 final int hostIndex = host;
                 EventQueue.invokeLater(() -> progressBar.setValue(hostIndex - 1));
                 String hostAddress = network.substring(0, network.lastIndexOf(".") + 1) + host;
+    
                 try {
                     InetAddress address = InetAddress.getByName(hostAddress);
                     if (address.isReachable(1000)) {
                         textArea.append("Host: " + hostAddress + " is reachable.\n");
-                        reachableHosts.add(hostAddress);
-                        EventQueue.invokeLater(() -> displayReachableNetwork(hostAddress));
+                        result.addReachableHost(hostAddress);
+    
+                        // Lanzar un nuevo hilo para escanear puertos
+                        final String finalHostAddress = hostAddress;
+                        new Thread(() -> scanHostPorts(finalHostAddress, startPort, endPort, textArea, result)).start();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            // Ahora escanear los puertos de los hosts alcanzables
-            for (String hostAddress : reachableHosts) {
-                scanHostPorts(hostAddress, startPort, endPort, textArea);
-            }
+    
+            scanResults.add(result);
             EventQueue.invokeLater(() -> progressBar.setValue(0));
             processNextNetwork();
         }).start();
@@ -188,22 +198,20 @@ public class NetworkScannerApp {
         }
     }
 
-    private void scanHostPorts(String hostAddress, int startPort, int endPort, JTextArea textArea) {
+    private void scanHostPorts(String hostAddress, int startPort, int endPort, JTextArea textArea, NetworkScanResult result) {
         for (int port = startPort; port <= endPort; port++) {
             if (!isScanning) {
-                // Si se ha cancelado el escaneo, salir del bucle y detener el escaneo de puertos
                 break;
             }
-            final int finalPort = port; // Crear una copia final de port para usar en la lambda
+            final int finalPort = port;
             try {
                 Socket socket = new Socket();
                 socket.connect(new InetSocketAddress(hostAddress, finalPort), 1000); // Tiempo de espera corto
                 socket.close();
-                // Usar finalPort dentro de la lambda
                 EventQueue.invokeLater(() -> textArea.append("Host: " + hostAddress + " on port " + finalPort + " is open.\n"));
+                result.addOpenPort(hostAddress, finalPort);
             } catch (IOException e) {
                 textArea.append("Host: " + hostAddress + " on port " + finalPort + " is closed.\n");
-                // Puerto no abierto o no alcanzable, puedes optar por no imprimir nada para estos casos
             }
         }
     }
@@ -215,32 +223,40 @@ public class NetworkScannerApp {
         } else {
             textArea.append("All scans completed.\n");
             EventQueue.invokeLater(() -> {
+                displayScanResults();
                 btnScanNetwork.setEnabled(true);
                 btnCancelScan.setEnabled(false);
             });
         }
     }
 
-    private void displayReachableNetwork(String network) {
+    private void displayScanResults() {
+        for (NetworkScanResult result : scanResults) {
+            displayNetworkResult(result);
+        }
+    }
+    
+    private void displayNetworkResult(NetworkScanResult result) {
         JPanel networkPanel = new JPanel();
-        networkPanel.setBorder(BorderFactory.createTitledBorder("Network: " + network));
+        networkPanel.setBorder(BorderFactory.createTitledBorder("Network: " + result.network));
         networkPanel.setLayout(new BorderLayout());
-
-        JLabel infoLabel = new JLabel("Información adicional aquí");
+    
+        // Aquí, construye la información para mostrar basada en result
+        JLabel infoLabel = new JLabel("Información de " + result.network);
+        networkPanel.add(infoLabel, BorderLayout.CENTER);
         JButton actionButton = new JButton("Acción");
-
-        // Aquí puedes agregar funcionalidades adicionales al botón o a otros componentes
+    
         actionButton.addActionListener(e -> {
             // Acción para realizar
         });
 
         networkPanel.add(infoLabel, BorderLayout.CENTER);
         networkPanel.add(actionButton, BorderLayout.SOUTH);
-
-        // Agrega networkPanel al contenedor principal o a otro componente de la interfaz de usuario
-        frame.getContentPane().add(networkPanel);
-        frame.revalidate();
-        frame.repaint();
+    
+        // Añade networkPanel al networkPanelContainer
+        networkPanelContainer.add(networkPanel);
+        networkPanelContainer.revalidate();
+        networkPanelContainer.repaint();
     }
 
     public void show() {
