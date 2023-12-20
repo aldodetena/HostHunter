@@ -25,6 +25,9 @@ public class NetworkScannerApp {
     private JButton btnCancelScan;
     private JProgressBar progressBar;
     private JPanel networkPanelContainer;
+    private JPanel panel;
+    private JScrollPane scrollPane;
+    private JScrollPane networkPanelScrollPane;
     private volatile boolean isScanning = false;
     private String selectedNetwork = null;
     private Queue<NetworkScanTask> networkQueue = new LinkedList<>();
@@ -36,39 +39,43 @@ public class NetworkScannerApp {
 
     private void initialize() {
         frame = new JFrame();
-        frame.setBounds(100, 100, 900, 600);
+        networkPanelContainer = new JPanel();
+        progressBar = new JProgressBar(0, 254); // Asumiendo que escaneas 254 hosts (1-254)
+        btnScanNetwork = new JButton("Scan Network");
+        btnCancelScan = new JButton("Cancel Scan");
+        textArea = new JTextArea();
+        scrollPane = new JScrollPane(textArea);
+        networkPanelScrollPane = new JScrollPane(networkPanelContainer);
+        panel = new JPanel();
+        
+        frame.setBounds(100, 100, 1000, 700);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setLayout(new BorderLayout(0, 0));
         frame.setResizable(true); // Permitir redimensionamiento
-
-        progressBar = new JProgressBar(0, 254); // Asumiendo que escaneas 254 hosts (1-254)
         progressBar.setValue(0);
         progressBar.setStringPainted(true); // Para mostrar el porcentaje de progreso
-
-        btnScanNetwork = new JButton("Scan Network");
-        btnCancelScan = new JButton("Cancel Scan");
         btnCancelScan.setEnabled(false); // Inicialmente deshabilitado
-
-        networkPanelContainer = new JPanel();
         networkPanelContainer.setLayout(new BoxLayout(networkPanelContainer, BoxLayout.Y_AXIS));
-        JScrollPane networkPanelScrollPane = new JScrollPane(networkPanelContainer);
-        frame.getContentPane().add(networkPanelScrollPane, BorderLayout.EAST); // Ajusta la posición según necesidad
 
-        JPanel panel = new JPanel();
         panel.add(btnScanNetwork);
         panel.add(btnCancelScan);
+
         frame.getContentPane().add(panel, BorderLayout.SOUTH);
         frame.getContentPane().add(progressBar, BorderLayout.NORTH);
-
-        textArea = new JTextArea();
-        JScrollPane scrollPane = new JScrollPane(textArea);
         frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
+        frame.getContentPane().add(networkPanelScrollPane, BorderLayout.EAST); // Ajusta la posición según necesidad
 
         btnScanNetwork.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 isScanning = true;
                 btnScanNetwork.setEnabled(false);
                 btnCancelScan.setEnabled(true);
+        
+                // Limpiar networkPanelContainer antes de iniciar un nuevo escaneo
+                networkPanelContainer.removeAll();
+                networkPanelContainer.revalidate();
+                networkPanelContainer.repaint();
+        
                 listNetworkInterfaces();
             }
         });
@@ -98,10 +105,9 @@ public class NetworkScannerApp {
                     if (address.isReachable(1000)) {
                         textArea.append("Host: " + hostAddress + " is reachable.\n");
                         result.addReachableHost(hostAddress);
-    
-                        // Lanzar un nuevo hilo para escanear puertos
-                        final String finalHostAddress = hostAddress;
-                        new Thread(() -> scanHostPorts(finalHostAddress, startPort, endPort, textArea, result)).start();
+
+                         // Escanear puertos para el host alcanzable
+                        scanHostPorts(hostAddress, startPort, endPort, textArea, result);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -221,11 +227,16 @@ public class NetworkScannerApp {
             NetworkScanTask task = networkQueue.poll();
             scanNetwork(textArea, task.network, task.startPort, task.endPort);
         } else {
-            textArea.append("All scans completed.\n");
             EventQueue.invokeLater(() -> {
-                displayScanResults();
+                // Eliminar el JTextArea del frame antes de mostrar los resultados
+                frame.getContentPane().remove(scrollPane);
+    
+                displayScanResults(); // Muestra los resultados
                 btnScanNetwork.setEnabled(true);
                 btnCancelScan.setEnabled(false);
+    
+                frame.revalidate();
+                frame.repaint(); // Redibujar el frame para reflejar los cambios
             });
         }
     }
@@ -237,26 +248,29 @@ public class NetworkScannerApp {
     }
     
     private void displayNetworkResult(NetworkScanResult result) {
-        JPanel networkPanel = new JPanel();
-        networkPanel.setBorder(BorderFactory.createTitledBorder("Network: " + result.network));
-        networkPanel.setLayout(new BorderLayout());
+        SwingUtilities.invokeLater(() -> {
+            JPanel networkPanel = new JPanel();
+            networkPanel.setLayout(new BorderLayout());
+            networkPanel.setBorder(BorderFactory.createTitledBorder("Network: " + result.network));
+            networkPanel.setAlignmentX(Component.LEFT_ALIGNMENT); // Ajuste para alinear a la izquierda
     
-        // Aquí, construye la información para mostrar basada en result
-        JLabel infoLabel = new JLabel("Información de " + result.network);
-        networkPanel.add(infoLabel, BorderLayout.CENTER);
-        JButton actionButton = new JButton("Acción");
+            // Aquí, construye la información para mostrar basada en result
+            JLabel infoLabel = new JLabel("Información de " + result.network);
+            networkPanel.add(infoLabel, BorderLayout.CENTER);
+            JButton actionButton = new JButton("Acción");
     
-        actionButton.addActionListener(e -> {
-            // Acción para realizar
+            actionButton.addActionListener(e -> {
+                // Acción para realizar
+            });
+    
+            networkPanel.add(infoLabel, BorderLayout.CENTER);
+            networkPanel.add(actionButton, BorderLayout.SOUTH);
+    
+            // Añade networkPanel al networkPanelContainer
+            networkPanelContainer.add(networkPanel);
+            networkPanelContainer.revalidate();
+            networkPanelContainer.repaint();
         });
-
-        networkPanel.add(infoLabel, BorderLayout.CENTER);
-        networkPanel.add(actionButton, BorderLayout.SOUTH);
-    
-        // Añade networkPanel al networkPanelContainer
-        networkPanelContainer.add(networkPanel);
-        networkPanelContainer.revalidate();
-        networkPanelContainer.repaint();
     }
 
     public void show() {
