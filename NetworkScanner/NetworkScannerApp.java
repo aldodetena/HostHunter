@@ -25,7 +25,7 @@ public class NetworkScannerApp {
     private JButton btnCancelScan;
     private JProgressBar progressBar;
     private JPanel networkPanelContainer;
-    private JPanel panel;
+    private JPanel mainpanel;
     private JScrollPane scrollPane;
     private JScrollPane networkPanelScrollPane;
     private volatile boolean isScanning = false;
@@ -46,7 +46,7 @@ public class NetworkScannerApp {
         textArea = new JTextArea();
         scrollPane = new JScrollPane(textArea);
         networkPanelScrollPane = new JScrollPane(networkPanelContainer);
-        panel = new JPanel();
+        mainpanel = new JPanel();
         
         frame.setBounds(100, 100, 1000, 700);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -57,10 +57,10 @@ public class NetworkScannerApp {
         btnCancelScan.setEnabled(false); // Inicialmente deshabilitado
         networkPanelContainer.setLayout(new BoxLayout(networkPanelContainer, BoxLayout.Y_AXIS));
 
-        panel.add(btnScanNetwork);
-        panel.add(btnCancelScan);
+        mainpanel.add(btnScanNetwork);
+        mainpanel.add(btnCancelScan);
 
-        frame.getContentPane().add(panel, BorderLayout.SOUTH);
+        frame.getContentPane().add(mainpanel, BorderLayout.SOUTH);
         frame.getContentPane().add(progressBar, BorderLayout.NORTH);
         frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
         frame.getContentPane().add(networkPanelScrollPane, BorderLayout.EAST); // Ajusta la posición según necesidad
@@ -178,15 +178,19 @@ public class NetworkScannerApp {
     private String calculateNetworkAddress(String ipAddress, String subnetMask) {
         String[] ipParts = ipAddress.split("\\.");
         String[] maskParts = subnetMask.split("\\.");
-        String networkAddress = "";
+        StringBuilder networkAddress = new StringBuilder();
     
         for (int i = 0; i < 4; i++) {
             int ipPart = Integer.parseInt(ipParts[i]);
             int maskPart = Integer.parseInt(maskParts[i]);
-            networkAddress += (ipPart & maskPart) + (i < 3 ? "." : "");
+            if (i < 3) { // Para los primeros tres octetos, aplica la máscara de subred
+                networkAddress.append((ipPart & maskPart)).append(".");
+            } else { // Para el último octeto, establecerlo a 0
+                networkAddress.append("0");
+            }
         }
     
-        return networkAddress;
+        return networkAddress.toString();
     }
 
     private static String getSubnetMask(NetworkInterface networkInterface) throws SocketException {
@@ -228,15 +232,12 @@ public class NetworkScannerApp {
             scanNetwork(textArea, task.network, task.startPort, task.endPort);
         } else {
             EventQueue.invokeLater(() -> {
-                // Eliminar el JTextArea del frame antes de mostrar los resultados
-                frame.getContentPane().remove(scrollPane);
+                // Limpiar el contenido del JTextArea
+                textArea.setText("");
     
-                displayScanResults(); // Muestra los resultados
+                displayScanResults(); // Mostrar los resultados del escaneo
                 btnScanNetwork.setEnabled(true);
                 btnCancelScan.setEnabled(false);
-    
-                frame.revalidate();
-                frame.repaint(); // Redibujar el frame para reflejar los cambios
             });
         }
     }
@@ -250,26 +251,36 @@ public class NetworkScannerApp {
     private void displayNetworkResult(NetworkScanResult result) {
         SwingUtilities.invokeLater(() -> {
             JPanel networkPanel = new JPanel();
-            networkPanel.setLayout(new BorderLayout());
-            networkPanel.setBorder(BorderFactory.createTitledBorder("Network: " + result.network));
-            networkPanel.setAlignmentX(Component.LEFT_ALIGNMENT); // Ajuste para alinear a la izquierda
+            networkPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+            networkPanel.setBorder(BorderFactory.createTitledBorder("Red: " + result.network));
     
-            // Aquí, construye la información para mostrar basada en result
-            JLabel infoLabel = new JLabel("Información de " + result.network);
-            networkPanel.add(infoLabel, BorderLayout.CENTER);
-            JButton actionButton = new JButton("Acción");
+            // Etiqueta con la información de la red
+            JLabel infoLabel = new JLabel("Host activo: " + result);
+            networkPanel.add(infoLabel);
     
-            actionButton.addActionListener(e -> {
-                // Acción para realizar
+            // Botones para acciones
+            JButton actionButton1 = new JButton("Acción 1");
+            JButton actionButton2 = new JButton("Acción 2");
+            JButton actionButton3 = new JButton("Acción 3");
+    
+            // Añadir los botones al panel
+            networkPanel.add(actionButton1);
+            networkPanel.add(actionButton2);
+            networkPanel.add(actionButton3);
+    
+            // Añadir eventos a los botones si es necesario
+            actionButton1.addActionListener(e -> {
+                // Acción para el botón 1
+            });
+            actionButton2.addActionListener(e -> {
+                // Acción para el botón 2
+            });
+            actionButton3.addActionListener(e -> {
+                // Acción para el botón 3
             });
     
-            networkPanel.add(infoLabel, BorderLayout.CENTER);
-            networkPanel.add(actionButton, BorderLayout.SOUTH);
-    
-            // Añade networkPanel al networkPanelContainer
             networkPanelContainer.add(networkPanel);
-            networkPanelContainer.revalidate();
-            networkPanelContainer.repaint();
+            mainpanel.revalidate();
         });
     }
 
