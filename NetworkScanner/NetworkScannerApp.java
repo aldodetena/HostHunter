@@ -24,10 +24,12 @@ public class NetworkScannerApp {
     private JButton btnScanNetwork;
     private JButton btnCancelScan;
     private JProgressBar progressBar;
-    private JPanel networkPanelContainer;
     private JPanel mainpanel;
+    private JPanel networkPanelContainer;
+    private JPanel infoPanel;
     private JScrollPane scrollPane;
     private JScrollPane networkPanelScrollPane;
+    private JScrollPane infoPanelScrollPane;
     private volatile boolean isScanning = false;
     private String selectedNetwork = null;
     private Queue<NetworkScanTask> networkQueue = new LinkedList<>();
@@ -92,7 +94,7 @@ public class NetworkScannerApp {
         new Thread(() -> {
             NetworkScanResult result = new NetworkScanResult(network);
     
-            for (int host = 1; host <= 5; host++) {
+            for (int host = 1; host <= 30; host++) {
                 if (!isScanning) {
                     break;
                 }
@@ -250,36 +252,38 @@ public class NetworkScannerApp {
     
     private void displayNetworkResult(NetworkScanResult result) {
         SwingUtilities.invokeLater(() -> {
-            JPanel networkPanel = new JPanel();
-            networkPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-            networkPanel.setBorder(BorderFactory.createTitledBorder("Red: " + result.network));
+            for (String hostAddress : result.reachableHosts) {
+                JPanel networkPanel = new JPanel();
+                networkPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+                networkPanel.setBorder(BorderFactory.createTitledBorder("Red: " + result.network));
     
-            // Etiqueta con la información de la red
-            JLabel infoLabel = new JLabel("Host activo: " + result);
-            networkPanel.add(infoLabel);
+                // Etiqueta con la dirección IP del host alcanzable
+                JLabel infoLabel = new JLabel("Host activo: " + hostAddress);
+                networkPanel.add(infoLabel);
     
-            // Botones para acciones
-            JButton actionButton1 = new JButton("Acción 1");
-            JButton actionButton2 = new JButton("Acción 2");
-            JButton actionButton3 = new JButton("Acción 3");
+                // Botones para acciones
+                JButton actionButton1 = new JButton("Acción 1");
+                JButton actionButton2 = new JButton("Acción 2");
+                JButton actionButton3 = new JButton("Acción 3");
     
-            // Añadir los botones al panel
-            networkPanel.add(actionButton1);
-            networkPanel.add(actionButton2);
-            networkPanel.add(actionButton3);
+                // Añadir los botones al panel
+                networkPanel.add(actionButton1);
+                networkPanel.add(actionButton2);
+                networkPanel.add(actionButton3);
     
-            // Añadir eventos a los botones si es necesario
-            actionButton1.addActionListener(e -> {
-                // Acción para el botón 1
-            });
-            actionButton2.addActionListener(e -> {
-                // Acción para el botón 2
-            });
-            actionButton3.addActionListener(e -> {
-                // Acción para el botón 3
-            });
+                // Añadir eventos a los botones si es necesario
+                actionButton1.addActionListener(e -> {
+                    // Acción para el botón 1
+                });
+                actionButton2.addActionListener(e -> {
+                    // Acción para el botón 2
+                });
+                actionButton3.addActionListener(e -> {
+                    // Acción para el botón 3
+                });
     
-            networkPanelContainer.add(networkPanel);
+                networkPanelContainer.add(networkPanel);
+            }
             mainpanel.revalidate();
         });
     }
