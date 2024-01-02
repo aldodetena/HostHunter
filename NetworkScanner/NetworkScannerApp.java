@@ -41,14 +41,15 @@ public class NetworkScannerApp {
 
     private void initialize() {
         frame = new JFrame();
+        mainpanel = new JPanel();
         networkPanelContainer = new JPanel();
+        infoPanel = new JPanel();
         progressBar = new JProgressBar(0, 254); // Asumiendo que escaneas 254 hosts (1-254)
         btnScanNetwork = new JButton("Scan Network");
         btnCancelScan = new JButton("Cancel Scan");
         textArea = new JTextArea();
         scrollPane = new JScrollPane(textArea);
         networkPanelScrollPane = new JScrollPane(networkPanelContainer);
-        mainpanel = new JPanel();
         
         frame.setBounds(100, 100, 1000, 700);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -58,6 +59,8 @@ public class NetworkScannerApp {
         progressBar.setStringPainted(true); // Para mostrar el porcentaje de progreso
         btnCancelScan.setEnabled(false); // Inicialmente deshabilitado
         networkPanelContainer.setLayout(new BoxLayout(networkPanelContainer, BoxLayout.Y_AXIS));
+        infoPanel.setLayout(new BorderLayout());
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Información del Host"));
 
         mainpanel.add(btnScanNetwork);
         mainpanel.add(btnCancelScan);
@@ -65,18 +68,25 @@ public class NetworkScannerApp {
         frame.getContentPane().add(mainpanel, BorderLayout.SOUTH);
         frame.getContentPane().add(progressBar, BorderLayout.NORTH);
         frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
-        frame.getContentPane().add(networkPanelScrollPane, BorderLayout.EAST); // Ajusta la posición según necesidad
+        frame.getContentPane().add(networkPanelScrollPane, BorderLayout.EAST);
+        frame.getContentPane().add(infoPanel, BorderLayout.WEST);
 
         btnScanNetwork.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 isScanning = true;
                 btnScanNetwork.setEnabled(false);
                 btnCancelScan.setEnabled(true);
+
+                // Limpiar los resultados del escaneo anterior
+                scanResults.clear();
         
                 // Limpiar networkPanelContainer antes de iniciar un nuevo escaneo
                 networkPanelContainer.removeAll();
                 networkPanelContainer.revalidate();
                 networkPanelContainer.repaint();
+                infoPanel.removeAll();
+                infoPanel.revalidate();
+                infoPanel.repaint();
         
                 listNetworkInterfaces();
             }
@@ -228,6 +238,24 @@ public class NetworkScannerApp {
         }
     }
 
+    public List<String> getOpenPortsInfoForHost(String network, String hostAddress) {
+        List<String> openPortsInfo = new ArrayList<>();
+    
+        for (NetworkScanResult result : scanResults) {
+            if (result.network.equals(network)) {
+                List<Integer> ports = result.openPorts.get(hostAddress);
+                if (ports != null) {
+                    for (Integer port : ports) {
+                        openPortsInfo.add("Puerto Abierto: " + port);
+                    }
+                }
+                break; // Salir del bucle una vez que encuentres la red y hayas procesado el host
+            }
+        }
+    
+        return openPortsInfo;
+    }
+
     private void processNextNetwork() {
         if (!networkQueue.isEmpty()) {
             NetworkScanTask task = networkQueue.poll();
@@ -254,26 +282,30 @@ public class NetworkScannerApp {
         SwingUtilities.invokeLater(() -> {
             for (String hostAddress : result.reachableHosts) {
                 JPanel networkPanel = new JPanel();
-                networkPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+                networkPanel.setLayout(new BoxLayout(networkPanel, BoxLayout.Y_AXIS));
                 networkPanel.setBorder(BorderFactory.createTitledBorder("Red: " + result.network));
+                networkPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
     
                 // Etiqueta con la dirección IP del host alcanzable
                 JLabel infoLabel = new JLabel("Host activo: " + hostAddress);
+                infoLabel.setAlignmentX(Component.LEFT_ALIGNMENT); // Alineación a la izquierda
                 networkPanel.add(infoLabel);
     
-                // Botones para acciones
-                JButton actionButton1 = new JButton("Acción 1");
+                // Panel para botones
+                JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+                JButton showPortsbButton = new JButton("Mostrar Puertos");
                 JButton actionButton2 = new JButton("Acción 2");
                 JButton actionButton3 = new JButton("Acción 3");
     
-                // Añadir los botones al panel
-                networkPanel.add(actionButton1);
-                networkPanel.add(actionButton2);
-                networkPanel.add(actionButton3);
+                buttonsPanel.add(showPortsbButton);
+                buttonsPanel.add(actionButton2);
+                buttonsPanel.add(actionButton3);
+                networkPanel.add(buttonsPanel); // Añadir el panel de botones
     
                 // Añadir eventos a los botones si es necesario
-                actionButton1.addActionListener(e -> {
-                    // Acción para el botón 1
+                showPortsbButton.addActionListener(e -> {
+                    List<String> openPortsInfo = getOpenPortsInfoForHost(selectedNetwork, hostAddress);
+                    updateInfoPanel(hostAddress, openPortsInfo);
                 });
                 actionButton2.addActionListener(e -> {
                     // Acción para el botón 2
@@ -286,6 +318,27 @@ public class NetworkScannerApp {
             }
             mainpanel.revalidate();
         });
+    }
+
+    public void updateInfoPanel(String hostAddress, List<String> openPortsInfo) {
+        infoPanel.removeAll(); // Eliminar contenido anterior
+    
+        // Añadir nueva información
+        infoPanel.add(new JLabel("Host: " + hostAddress), BorderLayout.NORTH);
+    
+        if (openPortsInfo.isEmpty()) {
+            // Mostrar mensaje si no se encuentran puertos abiertos
+            JLabel noPortsLabel = new JLabel("No se encontraron puertos abiertos en el rango.");
+            infoPanel.add(noPortsLabel, BorderLayout.CENTER);
+        } else {
+            // Mostrar la lista de puertos abiertos
+            JList<String> portsList = new JList<>(openPortsInfo.toArray(new String[0]));
+            infoPanel.add(new JScrollPane(portsList), BorderLayout.CENTER);
+        }
+    
+        // Actualizar el panel
+        infoPanel.revalidate();
+        infoPanel.repaint();
     }
 
     public void show() {
