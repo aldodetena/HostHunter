@@ -29,7 +29,6 @@ public class NetworkScannerApp {
     private JPanel infoPanel;
     private JScrollPane scrollPane;
     private JScrollPane networkPanelScrollPane;
-    private JScrollPane infoPanelScrollPane;
     private volatile boolean isScanning = false;
     private String selectedNetwork = null;
     private Queue<NetworkScanTask> networkQueue = new LinkedList<>();
@@ -294,11 +293,11 @@ public class NetworkScannerApp {
                 // Panel para botones
                 JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
                 JButton showPortsbButton = new JButton("Mostrar Puertos");
-                JButton actionButton2 = new JButton("Acción 2");
+                JButton showInfButton = new JButton("Acción 2");
                 JButton actionButton3 = new JButton("Acción 3");
     
                 buttonsPanel.add(showPortsbButton);
-                buttonsPanel.add(actionButton2);
+                buttonsPanel.add(showInfButton);
                 buttonsPanel.add(actionButton3);
                 networkPanel.add(buttonsPanel); // Añadir el panel de botones
     
@@ -307,8 +306,8 @@ public class NetworkScannerApp {
                     List<String> openPortsInfo = getOpenPortsInfoForHost(selectedNetwork, hostAddress);
                     updateInfoPanel(hostAddress, openPortsInfo);
                 });
-                actionButton2.addActionListener(e -> {
-                    // Acción para el botón 2
+                showInfButton.addActionListener(e -> {
+                    updateHostInfoPanel(result, hostAddress);
                 });
                 actionButton3.addActionListener(e -> {
                     // Acción para el botón 3
@@ -325,16 +324,36 @@ public class NetworkScannerApp {
     
         // Añadir nueva información
         infoPanel.add(new JLabel("Host: " + hostAddress), BorderLayout.NORTH);
+        infoPanel.setPreferredSize(new Dimension(250, frame.getHeight()));
+        infoPanel.setMinimumSize(new Dimension(250, 100));
     
         if (openPortsInfo.isEmpty()) {
             // Mostrar mensaje si no se encuentran puertos abiertos
-            JLabel noPortsLabel = new JLabel("No se encontraron puertos abiertos en el rango.");
+            JLabel noPortsLabel = new JLabel("No se encontraron puertos abiertos.");
             infoPanel.add(noPortsLabel, BorderLayout.CENTER);
         } else {
             // Mostrar la lista de puertos abiertos
             JList<String> portsList = new JList<>(openPortsInfo.toArray(new String[0]));
             infoPanel.add(new JScrollPane(portsList), BorderLayout.CENTER);
         }
+    
+        // Actualizar el panel
+        infoPanel.revalidate();
+        infoPanel.repaint();
+    }
+
+    public void updateHostInfoPanel(NetworkScanResult result, String hostAddress) {
+        infoPanel.removeAll(); // Eliminar contenido anterior
+    
+        // Obtener la información del host
+        List<String> hostInfo = result.getHostInfo(hostAddress);
+    
+        // Crear y configurar la JList
+        JList<String> infoList = new JList<>(hostInfo.toArray(new String[0]));
+        infoList.setLayoutOrientation(JList.VERTICAL);
+    
+        // Añadir la JList al infoPanel
+        infoPanel.add(new JScrollPane(infoList), BorderLayout.CENTER);
     
         // Actualizar el panel
         infoPanel.revalidate();
