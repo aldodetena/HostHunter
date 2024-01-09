@@ -7,6 +7,10 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 public class ServiceIdentifier {
 
     public static Map<String, String> getServiceInfo(String host, int port) {
@@ -16,7 +20,7 @@ public class ServiceIdentifier {
         switch (port) {
             case 21:
                 // Protocolo FTP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyFTPService(host, port, NetworkScanResult result);
                 break;
             case 22:
                 // Protocolo SSH
@@ -24,11 +28,11 @@ public class ServiceIdentifier {
                 break;
             case 23:
                 // Protocolo Telnet
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyTelnetService(host, port);
                 break;
             case 25:
                 // Protocolo SMTP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifySMTPService(host, port);
                 break;
             case 53:
                 // Protocolo FTP
@@ -44,8 +48,7 @@ public class ServiceIdentifier {
                 serviceInfo = identifyFTPService(host, port);
                 break;
             case 80:
-            case 443:
-                // Protocolo HTTP o HTTPS
+                // Protocolo HTTP
                 serviceInfo = identifyHTTPService(host, port);
                 break;
             case 110:
@@ -98,6 +101,10 @@ public class ServiceIdentifier {
             case 389:
                 // Protocolo LDAP
                 serviceInfo = identifyFTPService(host, port);
+                break;
+            case 443:
+                // Protocolo HTTPS
+                serviceInfo = identifyHTTPSService(host, port);
                 break;
             case 465:
                 // Protocolo SMTPS
@@ -221,11 +228,105 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // private static Map<String, String> identifyHTTPService(String host, int port) {
+    private static Map<String, String> identifyFTPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            // Leer la respuesta del servidor
+            String response = in.readLine();
+    
+            // Los servidores FTP suelen empezar sus mensajes de bienvenida con "220"
+            if (response.startsWith("220")) {
+                serviceInfo.put("Service", "FTP");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
 
-    // }
+    private static Map<String, String> identifyHTTPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+            
+            // Enviar solicitud HTTP básica
+            out.println("GET / HTTP/1.1");
+            out.println("Host: " + host);
+            out.println("Connection: Close");
+            out.println();
+    
+            // Leer la respuesta
+            String line;
+            StringBuilder header = new StringBuilder();
+            while ((line = in.readLine()) != null) {
+                header.append(line).append("\n");
+                if (line.isEmpty()) {
+                    break; // Fin de los encabezados de la respuesta
+                }
+            }
+    
+            // Comprobar si la respuesta es válida para HTTP
+            if (header.toString().startsWith("HTTP/")) {
+                serviceInfo.put("Service", "HTTP");
+                serviceInfo.put("Response", header.toString());
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
 
-    // private static Map<String, String> identifyFTPService(String host, int port) {
+    private static Map<String, String> identifyHTTPSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try {
+            // Crear un contexto SSL y un socket factory
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, null, null);
+            SSLSocketFactory factory = context.getSocketFactory();
 
-    // }
+            // Crear un socket SSL y conectar
+            try (SSLSocket socket = (SSLSocket) factory.createSocket(host, port);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                // Enviar solicitud HTTP básica
+                out.println("GET / HTTP/1.1");
+                out.println("Host: " + host);
+                out.println("Connection: Close");
+                out.println();
+
+                // Leer la respuesta
+                String line;
+                StringBuilder header = new StringBuilder();
+                while ((line = in.readLine()) != null) {
+                    header.append(line).append("\n");
+                    if (line.isEmpty()) {
+                        break; // Fin de los encabezados de la respuesta
+                    }
+                }
+
+                // Comprobar si la respuesta es válida para HTTP (HTTPS en este caso)
+                if (header.toString().startsWith("HTTP/")) {
+                    serviceInfo.put("Service", "HTTPS");
+                    serviceInfo.put("Response", header.toString());
+                } else {
+                    serviceInfo.put("Service", "Unknown");
+                }
+            }
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
 }

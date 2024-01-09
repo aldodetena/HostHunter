@@ -11,17 +11,20 @@ public class NetworkScanResult {
     List<String> reachableHosts;
     Map<String, List<Integer>> openPorts;
     Map<String, String> hostNames; // Almacenar los nombres de los hosts
+    Map<String, Map<Integer, Map<String, String>>> serviceDetails; // Almacenar detalles de servicios
 
     public NetworkScanResult(String network) {
         this.network = network;
         this.reachableHosts = new ArrayList<>();
         this.openPorts = new HashMap<>();
         this.hostNames = new HashMap<>();
+        this.serviceDetails = new HashMap<>();
     }
 
     public void addReachableHost(String host) {
         reachableHosts.add(host);
         openPorts.put(host, new ArrayList<>()); // Preparar para almacenar puertos abiertos
+        serviceDetails.put(host, new HashMap<>()); // Preparar para almacenar detalles de servicios
         // Obtener y almacenar el nombre del host
         String hostName = getHostName(host);
         hostNames.put(host, hostName);
@@ -29,6 +32,10 @@ public class NetworkScanResult {
 
     public void addOpenPort(String host, int port) {
         openPorts.getOrDefault(host, new ArrayList<>()).add(port);
+    }
+
+    public void addServiceDetails(String host, int port, Map<String, String> details) {
+        serviceDetails.get(host).put(port, details);
     }
 
     private String getHostName(String ipAddress) {
