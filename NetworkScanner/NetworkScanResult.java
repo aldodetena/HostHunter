@@ -34,8 +34,12 @@ public class NetworkScanResult {
         openPorts.getOrDefault(host, new ArrayList<>()).add(port);
     }
 
-    public void addServiceDetails(String host, int port, Map<String, String> details) {
-        serviceDetails.get(host).put(port, details);
+    // Método para añadir detalles de servicio
+    public void addServiceDetails(String host, int port, Map<String, String> serviceInfo) {
+        if (!serviceDetails.containsKey(host)) {
+            serviceDetails.put(host, new HashMap<>());
+        }
+        serviceDetails.get(host).put(port, serviceInfo);
     }
 
     private String getHostName(String ipAddress) {
