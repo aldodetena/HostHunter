@@ -62,46 +62,46 @@ public class ServiceIdentifier {
                 break;
             case 119:
                 // Protocolo NNTP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyNNTPService(host, port);
                 break;
             case 123:
                 // Protocolo NTP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyNTPService(host, port);
                 break;
             case 135:
                 // Protocolo MSRPC
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyMSRPCService(host, port);
                 break;
             case 137:
             case 138:
             case 139:
                 // Protocolo NetBIOS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyNetBIOSService(host, port);
                 break;
             case 143:
                 // Protocolo IMAP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyIMAPService(host, port);
                 break;
             case 161:
             case 162:
                 // Protocolo SNMP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifySNMPService(host, port);
                 break;
             case 179:
                 // Protocolo BGP
-                serviceInfo = identifyHTTPService(host, port);
+                serviceInfo = identifyBGPService(host, port);
                 break;
             case 194:
                 // Protocolo IRC
-                serviceInfo = identifyHTTPService(host, port);
+                serviceInfo = identifyIRCService(host, port);
                 break;
             case 220:
                 // Protocolo IMAP3
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyIMAP3Service(host, port);
                 break;
             case 389:
                 // Protocolo LDAP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyLDAPService(host, port);
                 break;
             case 443:
                 // Protocolo HTTPS
@@ -297,32 +297,6 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    public static Map<String, String> identifyDNSService(String host, int port) {
-        Map<String, String> serviceInfo = new HashMap<>();
-        try {
-            // Crear un paquete de consulta DNS (esto es bastante simplificado)
-            byte[] query = new byte[28]; // Un paquete DNS simple
-            DatagramPacket packet = new DatagramPacket(query, query.length, InetAddress.getByName(host), port);
-    
-            // Enviar la consulta DNS
-            DatagramSocket socket = new DatagramSocket();
-            socket.setSoTimeout(3000); // Establecer un tiempo de espera
-            socket.send(packet);
-    
-            // Esperar la respuesta
-            DatagramPacket response = new DatagramPacket(new byte[512], 512);
-            socket.receive(response);
-    
-            // Si recibimos una respuesta, asumimos que es un servicio DNS
-            serviceInfo.put("Service", "DNS");
-            serviceInfo.put("Response", "Received DNS response");
-        } catch (IOException e) {
-            serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
-        }
-        return serviceInfo;
-    }
-
     // Función para identificar servicios SMTP
     private static Map<String, String> identifySMTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
@@ -343,6 +317,37 @@ public class ServiceIdentifier {
         } catch (IOException e) {
             serviceInfo.put("Service", "Error");
             serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    public static Map<String, String> identifyDNSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            // Crear un paquete de consulta DNS (esto es bastante simplificado)
+            byte[] query = new byte[28]; // Un paquete DNS simple
+            DatagramPacket packet = new DatagramPacket(query, query.length, InetAddress.getByName(host), port);
+    
+            // Enviar la consulta DNS
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+            socket.send(packet);
+    
+            // Esperar la respuesta
+            DatagramPacket response = new DatagramPacket(new byte[512], 512);
+            socket.receive(response);
+    
+            // Si recibimos una respuesta, asumimos que es un servicio DNS
+            serviceInfo.put("Service", "DNS");
+            serviceInfo.put("Response", "Received DNS response");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -472,6 +477,258 @@ public class ServiceIdentifier {
                 serviceInfo.put("Service", "Unknown");
             }
         } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios RPC
+    public static Map<String, String> identifyRPCService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "RPC");
+            serviceInfo.put("Response", "Port is open, might be RPC");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios NNTP
+    public static Map<String, String> identifyNNTPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Leer la respuesta del servidor NNTP
+            String response = in.readLine();
+    
+            // Los servidores NNTP suelen comenzar su mensaje de bienvenida con un código numérico
+            if (response != null && response.matches("^[12]\\d\\d.*")) {
+                serviceInfo.put("Service", "NNTP");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios NTP
+    public static Map<String, String> identifyNTPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Crear un mensaje NTP básico
+            byte[] ntpRequest = new byte[48];
+            ntpRequest[0] = 27; // NTP mode 3 (cliente) y versión 3
+    
+            // Enviar la solicitud NTP
+            DatagramPacket requestPacket = new DatagramPacket(ntpRequest, ntpRequest.length, InetAddress.getByName(host), port);
+            socket.send(requestPacket);
+    
+            // Intentar recibir la respuesta
+            DatagramPacket responsePacket = new DatagramPacket(new byte[48], 48);
+            socket.receive(responsePacket);
+    
+            // Si recibimos una respuesta, asumimos que es un servicio NTP
+            serviceInfo.put("Service", "NTP");
+            serviceInfo.put("Response", "Received NTP response");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios MSRPC
+    public static Map<String, String> identifyMSRPCService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "MSRPC");
+            serviceInfo.put("Response", "Port is open, might be MSRPC");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios NetBIOS
+    public static Map<String, String> identifyNetBIOSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "NetBIOS");
+            serviceInfo.put("Response", "Port is open, might be NetBIOS");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios IMAP
+    public static Map<String, String> identifyIMAPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Leer la respuesta del servidor IMAP
+            String response = in.readLine();
+    
+            // Los servidores IMAP suelen comenzar su mensaje de bienvenida con "* OK"
+            if (response != null && response.startsWith("* OK")) {
+                serviceInfo.put("Service", "IMAP");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios SNMP
+    public static Map<String, String> identifySNMPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Crear un mensaje SNMP GET básico (esto es altamente simplificado)
+            byte[] snmpRequest = new byte[] { /* ... datos del paquete SNMP ... */ };
+            DatagramPacket requestPacket = new DatagramPacket(snmpRequest, snmpRequest.length, InetAddress.getByName(host), port);
+    
+            // Enviar la solicitud SNMP
+            socket.send(requestPacket);
+    
+            // Intentar recibir la respuesta
+            DatagramPacket responsePacket = new DatagramPacket(new byte[512], 512);
+            socket.receive(responsePacket);
+    
+            // Si recibimos una respuesta, asumimos que es un servicio SNMP
+            serviceInfo.put("Service", "SNMP");
+            serviceInfo.put("Response", "Received SNMP response");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios BGP
+    public static Map<String, String> identifyBGPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "BGP");
+            serviceInfo.put("Response", "Port is open, might be BGP");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios IRC
+    public static Map<String, String> identifyIRCService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Leer la respuesta del servidor IRC
+            String response = in.readLine();
+    
+            // Los servidores IRC suelen comenzar su mensaje con un código numérico o con "NOTICE"
+            if (response != null && (response.matches("^:\\S+ \\d{3} .*") || response.startsWith("NOTICE"))) {
+                serviceInfo.put("Service", "IRC");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios IMAP3
+    public static Map<String, String> identifyIMAP3Service(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Leer la respuesta del servidor IMAP3
+            String response = in.readLine();
+    
+            // Los servidores IMAP3 suelen comenzar su mensaje de bienvenida con "* OK"
+            if (response != null && response.startsWith("* OK")) {
+                serviceInfo.put("Service", "IMAP3");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios LDAP
+    public static Map<String, String> identifyLDAPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "LDAP");
+            serviceInfo.put("Response", "Port is open, might be LDAP");
+        } catch (Exception e) {
             serviceInfo.put("Service", "Error");
             serviceInfo.put("ErrorMessage", e.getMessage());
         }
