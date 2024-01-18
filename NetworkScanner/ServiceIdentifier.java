@@ -109,41 +109,41 @@ public class ServiceIdentifier {
                 break;
             case 465:
                 // Protocolo SMTPS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifySMTPSService(host, port);
                 break;
             case 512:
             case 513:
             case 514:
                 // Protocolos Rexec, Rlogin, Rsh
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyRemoteService(host, port);
                 break;
             case 587:
                 // Protocolo SMTP Alt
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = checkSMTPorSMTPSService(host, port);
                 break;
             case 591:
-                // Protocolo SMTP Alt
-                serviceInfo = identifyFTPService(host, port);
+                // Protocolo FileMaker
+                serviceInfo = identifyFileMakerService(host, port);
                 break;
             case 636:
                 // Protocolo LDAPS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyLDAPSService(host, port);
                 break;
             case 853:
-                // Protocolo DNS sobre TLS
-                serviceInfo = identifyFTPService(host, port);
+                // Protocolo DoT
+                serviceInfo = identifyDoTService(host, port);
                 break;
             case 990:
                 // Protocolo FTPS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyFTPSService(host, port);
                 break;
             case 993:
                 // Protocolo IMAPS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyIMAPSService(host, port);
                 break;
             case 995:
                 // Protocolo POP3S
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyPOP3SService(host, port);
                 break;
             case 1194:
                 // Puerto estandar OpenVPN
@@ -779,4 +779,311 @@ public class ServiceIdentifier {
         }
         return serviceInfo;
     }
+
+    // Función para identificar servicios SMTPS
+    public static Map<String, String> identifySMTPSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        SSLSocket socket = null;
+        try {
+            // Crear un socket SSL
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(host, port);
+    
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Iniciar la sesión SSL
+            socket.startHandshake();
+    
+            // Leer la respuesta del servidor SMTPS
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String response = in.readLine();
+    
+            // Los servidores SMTPS suelen comenzar su saludo con "220"
+            if (response != null && response.startsWith("220")) {
+                serviceInfo.put("Service", "SMTPS");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Manejo de la excepción al cerrar el socket
+                }
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios Rexec, Rlogin y Rsh
+    public static Map<String, String> identifyRemoteService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            String serviceName = "";
+            switch (port) {
+                case 512:
+                    serviceName = "Rexec";
+                    break;
+                case 513:
+                    serviceName = "Rlogin";
+                    break;
+                case 514:
+                    serviceName = "Rsh";
+                    break;
+            }
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto y el servicio podría estar activo
+            serviceInfo.put("Service", serviceName);
+            serviceInfo.put("Response", "Port is open, might be " + serviceName);
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios STMP o SMTPS en el puerto 587
+    public static Map<String, String> checkSMTPorSMTPSService(String host, int port) {
+        Map<String, String> serviceInfo = identifySMTPSService(host, port);
+    
+        if (serviceInfo.get("Service").equals("Error")) {
+            // Si hay un error al intentar SMTPS, intentamos SMTP
+            serviceInfo = identifySMTPService(host, port);
+        }
+    
+        // Actualizar el objeto NetworkScanResult con la información del servicio
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios FileMaker
+    public static Map<String, String> identifyFileMakerService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "FileMaker or other");
+            serviceInfo.put("Response", "Port is open, might be FileMaker or another service");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios LDAPS
+    public static Map<String, String> identifyLDAPSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        SSLSocket socket = null;
+        try {
+            // Crear un socket SSL
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(host, port);
+    
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Iniciar la sesión SSL
+            socket.startHandshake();
+    
+            // Leer la respuesta del servidor LDAPS
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String response = in.readLine();
+    
+            // Verificar si hay alguna respuesta
+            if (response != null) {
+                serviceInfo.put("Service", "LDAPS");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Manejo de la excepción al cerrar el socket
+                }
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios DoT
+    public static Map<String, String> identifyDoTService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        SSLSocket socket = null;
+        try {
+            // Crear un socket SSL
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(host, port);
+    
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Iniciar la sesión TLS
+            socket.startHandshake();
+    
+            // Enviar una solicitud DNS y recibir la respuesta sería el siguiente paso,
+            // pero esto requiere una implementación más compleja y específica.
+    
+            // Si se establece la conexión sin errores, asumimos que DoT podría estar presente
+            serviceInfo.put("Service", "DNS over TLS (DoT)");
+            serviceInfo.put("Response", "TLS connection established");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Manejo de la excepción al cerrar el socket
+                }
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios FTPS
+    public static Map<String, String> identifyFTPSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        SSLSocket socket = null;
+        try {
+            // Crear un socket SSL
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(host, port);
+    
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Iniciar la sesión SSL
+            socket.startHandshake();
+    
+            // Comunicación con el servidor FTPS
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+    
+            // Leer la respuesta inicial del servidor
+            String response = in.readLine();
+            if (response != null && response.startsWith("220")) {
+                // Enviar un comando básico de FTP (por ejemplo, STAT) y leer la respuesta
+                out.println("STAT");
+                String statResponse = in.readLine();
+    
+                serviceInfo.put("Service", "FTPS");
+                serviceInfo.put("Response", response);
+                serviceInfo.put("STAT Response", statResponse != null ? statResponse : "No STAT response");
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Manejo de la excepción al cerrar el socket
+                }
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios IMAPS
+    public static Map<String, String> identifyIMAPSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        SSLSocket socket = null;
+        try {
+            // Crear un socket SSL
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(host, port);
+    
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Iniciar la sesión SSL
+            socket.startHandshake();
+    
+            // Leer la respuesta del servidor IMAPS
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String response = in.readLine();
+    
+            // Los servidores IMAPS suelen comenzar su mensaje de bienvenida con "* OK"
+            if (response != null && response.startsWith("* OK")) {
+                serviceInfo.put("Service", "IMAPS");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Manejo de la excepción al cerrar el socket
+                }
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios POP3S
+    public static Map<String, String> identifyPOP3SService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        SSLSocket socket = null;
+        try {
+            // Crear un socket SSL
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(host, port);
+    
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Iniciar la sesión SSL
+            socket.startHandshake();
+    
+            // Leer la respuesta del servidor POP3S
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String response = in.readLine();
+    
+            // Los servidores POP3S suelen comenzar su mensaje de bienvenida con "+OK"
+            if (response != null && response.startsWith("+OK")) {
+                serviceInfo.put("Service", "POP3S");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Manejo de la excepción al cerrar el socket
+                }
+            }
+        }
+        return serviceInfo;
+    }
+
 }
