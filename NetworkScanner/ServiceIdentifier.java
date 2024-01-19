@@ -16,6 +16,7 @@ public class ServiceIdentifier {
 
     public static void getServiceInfo(String host, int port, NetworkScanResult result) {
         Map<String, String> serviceInfo;
+        boolean ssl;
 
         // Identificar el servicio basado en el puerto
         switch (port) {
@@ -147,53 +148,60 @@ public class ServiceIdentifier {
                 break;
             case 1194:
                 // Puerto estandar OpenVPN
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyOpenVPNService(host, port);
                 break;
             case 1723:
                 // Puerto estandar VPN PPTP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyPPTPService(host, port);
                 break;
             case 1812:
                 // Puerto estandar de autentificación RADIUS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyRADIUSService(host, port);
                 break;
             case 1813:
                 // Puerto estandar para el accounting de RADIUS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyRADIUSAccountingService(host, port);
+                break;
+            case 1900:
+                // Protocolo UPnP
+                serviceInfo = identifyUPnPService(host, port);
                 break;
             case 2049:
                 // Protocolo NFS
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyNFSService(host, port);
                 break;
             case 2082:
-            case 2083:
                 // Puerto estandar para CPanel
-                serviceInfo = identifyFTPService(host, port);
+                ssl = false;
+                serviceInfo = identifyCPanelService(host, port, ssl);
+            case 2083:
+                // Puerto estandar para CPanel sobre TLS
+                ssl = true;
+                serviceInfo = identifyCPanelService(host, port, ssl);
                 break;
             case 3074:
                 // Puerto estandar para Microsoft Xbox Live
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyXboxLiveService(host, port);
                 break;
             case 3306:
                 // Puerto estandar MYSQL
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyMySQLService(host, port);
                 break;
             case 3389:
                 // Puerto estandar RDP de Windows
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyRDPService(host, port);
                 break;
             case 4662:
+                // Puerto estandar eMule TCP
+                serviceInfo = identifyeMuleTCPService(host, port);
+                break;
             case 4672:
-                // Puerto estandar eMule
-                serviceInfo = identifyFTPService(host, port);
+                // Puerto estandar eMule UDP
+                serviceInfo = identifyeMuleUDPService(host, port);
                 break;
             case 4899:
                 // Puerto estandar de Radmin
-                serviceInfo = identifyFTPService(host, port);
-                break;
-            case 5000:
-                // Protocolo UPnP
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyRadminService(host, port);
                 break;
             case 5400:
             case 5500:
@@ -202,7 +210,7 @@ public class ServiceIdentifier {
             case 5800:
             case 5900:
                 // Puertos estandar del VNC
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyVNCService(host, port);
                 break;
             case 6881:
             case 6969:
@@ -211,7 +219,7 @@ public class ServiceIdentifier {
                 break;
             case 8080:
                 // Protocolo HTTP Alt
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyHTTPService(host, port);
                 break;
             case 25565:
                 // Puerto estandar de Minecraft
@@ -1086,4 +1094,377 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
+    // Función para identificar servicios OpenVPN
+    public static Map<String, String> identifyOpenVPNService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "OpenVPN");
+            serviceInfo.put("Response", "Port is open, might be OpenVPN");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios PPTP
+    public static Map<String, String> identifyPPTPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "PPTP");
+            serviceInfo.put("Response", "Port is open, might be PPTP");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios RADIUS
+    public static Map<String, String> identifyRADIUSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Crear un paquete RADIUS de prueba (solicitud de acceso)
+            byte[] radiusRequest = new byte[20]; // Un paquete RADIUS simplificado
+            radiusRequest[0] = 1; // Tipo de mensaje (Solicitud de Acceso)
+            radiusRequest[1] = 1; // Identificador
+            // Los siguientes bytes incluirían la longitud y los atributos, pero se omiten para simplificar
+    
+            DatagramPacket packet = new DatagramPacket(radiusRequest, radiusRequest.length, InetAddress.getByName(host), port);
+            socket.send(packet);
+    
+            // Intentar recibir la respuesta
+            byte[] responseBuf = new byte[512];
+            DatagramPacket response = new DatagramPacket(responseBuf, responseBuf.length);
+            socket.receive(response);
+    
+            // Si recibimos una respuesta, asumimos que es un servicio RADIUS
+            serviceInfo.put("Service", "RADIUS");
+            serviceInfo.put("Response", "Received RADIUS response");
+        } catch (SocketTimeoutException e) {
+            serviceInfo.put("Service", "RADIUS");
+            serviceInfo.put("Response", "No response (RADIUS might still be present)");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios RADIUS accounting
+    public static Map<String, String> identifyRADIUSAccountingService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Crear un paquete RADIUS de prueba (solicitud de contabilidad)
+            byte[] radiusRequest = new byte[20]; // Un paquete RADIUS simplificado
+            radiusRequest[0] = 4; // Tipo de mensaje (Solicitud de Contabilidad)
+            radiusRequest[1] = 1; // Identificador
+            // Los siguientes bytes incluirían la longitud y los atributos, pero se omiten para simplificar
+    
+            DatagramPacket packet = new DatagramPacket(radiusRequest, radiusRequest.length, InetAddress.getByName(host), port);
+            socket.send(packet);
+    
+            // Intentar recibir la respuesta
+            byte[] responseBuf = new byte[512];
+            DatagramPacket response = new DatagramPacket(responseBuf, responseBuf.length);
+            socket.receive(response);
+    
+            // Si recibimos una respuesta, asumimos que es un servicio de contabilidad RADIUS
+            serviceInfo.put("Service", "RADIUS Accounting");
+            serviceInfo.put("Response", "Received RADIUS Accounting response");
+        } catch (SocketTimeoutException e) {
+            serviceInfo.put("Service", "RADIUS Accounting");
+            serviceInfo.put("Response", "No response (RADIUS Accounting might still be present)");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios NFS
+    public static Map<String, String> identifyNFSService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "NFS");
+            serviceInfo.put("Response", "Port is open, might be NFS");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios CPanel
+    public static Map<String, String> identifyCPanelService(String host, int port, boolean useSSL) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        Socket socket = null;
+        BufferedReader in = null;
+    
+        try {
+            if (useSSL) {
+                // Crear un socket SSL para conexiones seguras
+                SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                socket = sslSocketFactory.createSocket(host, port);
+            } else {
+                // Crear un socket normal para conexiones no seguras
+                socket = new Socket(host, port);
+            }
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Establecer el flujo de entrada para leer la respuesta
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    
+            // Leer la respuesta inicial
+            String response = in.readLine();
+    
+            // Verificar si la respuesta contiene indicativos de cPanel
+            if (response != null && response.contains("cPanel")) {
+                serviceInfo.put("Service", "cPanel");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown or not cPanel");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            // Cerrar el socket y el BufferedReader
+            try {
+                if (in != null) {
+                    in.close();
+                }
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
+            } catch (IOException e) {
+                // Manejo de la excepción al cerrar recursos
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios XBox Live
+    public static Map<String, String> identifyXboxLiveService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "Xbox Live");
+            serviceInfo.put("Response", "Port is open, might be Xbox Live");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios MYSQL
+    public static Map<String, String> identifyMySQLService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Leer la respuesta inicial del servidor MySQL
+            String response = in.readLine();
+    
+            // Los servidores MySQL suelen enviar información de versión al principio
+            if (response != null && response.contains("MySQL")) {
+                serviceInfo.put("Service", "MySQL");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown or not MySQL");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios RDP
+    public static Map<String, String> identifyRDPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "RDP");
+            serviceInfo.put("Response", "Port is open, might be RDP");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios eMule TCP
+    public static Map<String, String> identifyeMuleTCPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "eMule TCP");
+            serviceInfo.put("Response", "TCP Port is open, might be eMule");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios eMule UDP
+    public static Map<String, String> identifyeMuleUDPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000);
+    
+            byte[] buf = new byte[10]; // Un paquete UDP simplificado para eMule
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, InetAddress.getByName(host), port);
+            socket.send(packet);
+    
+            // Intentar recibir la respuesta (en realidad, no esperamos una respuesta específica para UDP)
+            DatagramPacket response = new DatagramPacket(new byte[10], 10);
+            socket.receive(response);
+    
+            serviceInfo.put("Service", "eMule UDP");
+            serviceInfo.put("Response", "UDP Port is open, might be eMule");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios Radmin
+    public static Map<String, String> identifyRadminService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port)) {
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+    
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            serviceInfo.put("Service", "Radmin");
+            serviceInfo.put("Response", "Port is open, might be Radmin");
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios UPnP
+    public static Map<String, String> identifyUPnPService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000);
+    
+            // Mensaje de descubrimiento SSDP
+            String message = "M-SEARCH * HTTP/1.1\r\n" +
+                             "HOST: 239.255.255.250:1900\r\n" +
+                             "MAN: \"ssdp:discover\"\r\n" +
+                             "MX: 1\r\n" +
+                             "ST: ssdp:all\r\n" + // Buscar todos los dispositivos y servicios
+                             "\r\n";
+            byte[] msgBytes = message.getBytes();
+    
+            // Enviar mensaje de descubrimiento SSDP
+            InetAddress group = InetAddress.getByName("239.255.255.250");
+            DatagramPacket packet = new DatagramPacket(msgBytes, msgBytes.length, group, 1900);
+            socket.send(packet);
+    
+            // Esperar respuestas
+            while (true) {
+                DatagramPacket response = new DatagramPacket(new byte[1024], 1024);
+                socket.receive(response);
+    
+                String responseData = new String(response.getData(), 0, response.getLength());
+                if (responseData.contains("UPnP")) {
+                    serviceInfo.put("Service", "UPnP");
+                    serviceInfo.put("Response", responseData);
+                    break;
+                }
+            }
+        } catch (SocketTimeoutException e) {
+            serviceInfo.put("Service", "UPnP");
+            serviceInfo.put("Response", "No response (UPnP might still be present)");
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios VNC
+    public static Map<String, String> identifyVNCService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera
+    
+            // Leer la respuesta inicial del servidor VNC
+            String response = in.readLine();
+    
+            // Los servidores VNC suelen enviar la versión del protocolo RFB al principio
+            if (response != null && response.contains("RFB")) {
+                serviceInfo.put("Service", "VNC");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown or not VNC");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
 }
