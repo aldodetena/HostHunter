@@ -1,6 +1,9 @@
 package NetworkScanner;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -213,9 +216,9 @@ public class ServiceIdentifier {
                 serviceInfo = identifyVNCService(host, port);
                 break;
             case 6881:
-            case 6969:
+            case 6889:
                 // Puerto estandar de BitTorrent
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyBitTorrentService(host, port);
                 break;
             case 8080:
                 // Protocolo HTTP Alt
@@ -223,10 +226,6 @@ public class ServiceIdentifier {
                 break;
             case 25565:
                 // Puerto estandar de Minecraft
-                serviceInfo = identifyFTPService(host, port);
-                break;
-            case 51400:
-                // Puerto predeterminado de BitTorrent
                 serviceInfo = identifyFTPService(host, port);
                 break;
             
@@ -1467,4 +1466,119 @@ public class ServiceIdentifier {
         }
         return serviceInfo;
     }
+
+    // Función para identificar servicios BitTorrent
+    public static Map<String, String> identifyBitTorrentService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))){
+            // Establecer un tiempo de espera
+            socket.setSoTimeout(3000);
+
+            String response = in.readLine();
+
+            // Si la conexión es exitosa, asumimos que el puerto está abierto
+            if (response != null && response.contains("RFB")) {
+                serviceInfo.put("Service", "BitTorrent");
+                serviceInfo.put("Response", "Port is open, might be BitTorrent");
+            } else {
+                serviceInfo.put("Service", "Unknown or not VNC");
+            }
+
+        } catch (Exception e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Función para identificar servicios Minecraft
+    public static Map<String, String> identifyMinecraftService(String host, int port) {
+        Map<String, String> serviceInfo = new HashMap<>();
+        try (Socket socket = new Socket(host, port);
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            DataInputStream in = new DataInputStream(socket.getInputStream())) {
+
+            socket.setSoTimeout(3000);
+
+            // Enviar handshake y status request
+            sendHandshake(out, host, port);
+            sendStatusRequest(out);
+
+            // Leer la respuesta del servidor
+            String response = readResponse(in);
+            if (response != null && response.contains("minecraft")) {
+                serviceInfo.put("Service", "Minecraft");
+                serviceInfo.put("Response", response);
+            } else {
+                serviceInfo.put("Service", "Unknown or not Minecraft");
+            }
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", e.getMessage());
+        }
+        return serviceInfo;
+    }
+
+    // Funciones relacionadas con la identificación de servicios de Minecraft
+    private static void sendHandshake(DataOutputStream out, String host, int port) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        DataOutputStream handshake = new DataOutputStream(buffer);
+
+        handshake.writeByte(0x00); // ID del paquete de handshake
+        writeVarInt(handshake, -1); // Versión del protocolo ( -1 para la versión más reciente)
+        writeVarInt(handshake, host.length()); // Longitud del nombre del host
+        handshake.writeBytes(host); // Nombre del host
+        handshake.writeInt(port); // Puerto
+        writeVarInt(handshake, 1); // Estado siguiente (1 para estado)
+
+        writeVarInt(out, buffer.size()); // Preparar la longitud del paquete
+        out.write(buffer.toByteArray()); // Enviar el paquete de handshake
+    }
+
+    private static void writeVarInt(DataOutputStream out, int value) throws IOException {
+        while ((value & -128) != 0) {
+            out.writeByte(value & 127 | 128);
+            value >>>= 7;
+        }
+        out.writeByte(value);
+    }
+
+    private static void sendStatusRequest(DataOutputStream out) throws IOException {
+        out.writeByte(0x01); // Tamaño del paquete
+        out.writeByte(0x00); // ID del paquete de solicitud de estado
+    }
+
+    private static String readResponse(DataInputStream in) throws IOException {
+        readVarInt(in); // Longitud total del paquete
+        int id = readVarInt(in);
+    
+        if (id == 0x00) {
+            int length = readVarInt(in);
+            byte[] data = new byte[length];
+            in.readFully(data);
+            return new String(data);
+        }
+    
+        return null;
+    }
+    
+    private static int readVarInt(DataInputStream in) throws IOException {
+        int numRead = 0;
+        int result = 0;
+        byte read;
+        do {
+            read = in.readByte();
+            int value = (read & 0b01111111);
+            result |= (value << (7 * numRead));
+    
+            numRead++;
+            if (numRead > 5) {
+                throw new RuntimeException("VarInt is too big");
+            }
+        } while ((read & 0b10000000) != 0);
+    
+        return result;
+    }
+    // FIN Funciones Minecraft
 }
