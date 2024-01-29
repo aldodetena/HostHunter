@@ -42,6 +42,11 @@ public class NetworkScanResult {
         serviceDetails.get(host).put(port, serviceInfo);
     }
 
+    // Método para obtener los detalles del servicio para un host específico
+    public Map<Integer, Map<String, String>> getServiceDetails(String host) {
+        return serviceDetails.getOrDefault(host, new HashMap<>());
+    }
+
     private String getHostName(String ipAddress) {
         try {
             InetAddress inetAddress = InetAddress.getByName(ipAddress);

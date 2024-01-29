@@ -11,6 +11,7 @@ import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -229,6 +230,8 @@ public class NetworkScannerApp {
                 Socket socket = new Socket();
                 socket.connect(new InetSocketAddress(hostAddress, finalPort), 1000); // Tiempo de espera corto
                 socket.close();
+                 // Identificar el servicio en el puerto abierto
+                ServiceIdentifier.getServiceInfo(hostAddress, finalPort, result);
                 EventQueue.invokeLater(() -> textArea.append("Host: " + hostAddress + " on port " + finalPort + " is open.\n"));
                 result.addOpenPort(hostAddress, finalPort);
             } catch (IOException e) {
@@ -293,7 +296,7 @@ public class NetworkScannerApp {
                 // Panel para botones
                 JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
                 JButton showPortsbButton = new JButton("Mostrar Puertos");
-                JButton showInfButton = new JButton("Acción 2");
+                JButton showInfButton = new JButton("Mostrar Información");
                 JButton actionButton3 = new JButton("Acción 3");
     
                 buttonsPanel.add(showPortsbButton);
@@ -303,8 +306,7 @@ public class NetworkScannerApp {
     
                 // Añadir eventos a los botones si es necesario
                 showPortsbButton.addActionListener(e -> {
-                    List<String> openPortsInfo = getOpenPortsInfoForHost(selectedNetwork, hostAddress);
-                    updateInfoPanel(hostAddress, openPortsInfo);
+                    updatePortsInfoPanel(hostAddress, result);
                 });
                 showInfButton.addActionListener(e -> {
                     updateHostInfoPanel(result, hostAddress);
@@ -319,25 +321,29 @@ public class NetworkScannerApp {
         });
     }
 
-    public void updateInfoPanel(String hostAddress, List<String> openPortsInfo) {
+    public void updatePortsInfoPanel(String hostAddress, NetworkScanResult result) {
         infoPanel.removeAll(); // Eliminar contenido anterior
     
-        // Añadir nueva información
         infoPanel.add(new JLabel("Host: " + hostAddress), BorderLayout.NORTH);
         infoPanel.setPreferredSize(new Dimension(250, frame.getHeight()));
         infoPanel.setMinimumSize(new Dimension(250, 100));
     
-        if (openPortsInfo.isEmpty()) {
-            // Mostrar mensaje si no se encuentran puertos abiertos
+        Map<Integer, Map<String, String>> services = result.getServiceDetails(hostAddress);
+        if (services.isEmpty()) {
             JLabel noPortsLabel = new JLabel("No se encontraron puertos abiertos.");
             infoPanel.add(noPortsLabel, BorderLayout.CENTER);
         } else {
-            // Mostrar la lista de puertos abiertos
-            JList<String> portsList = new JList<>(openPortsInfo.toArray(new String[0]));
+            DefaultListModel<String> listModel = new DefaultListModel<>();
+            for (Map.Entry<Integer, Map<String, String>> entry : services.entrySet()) {
+                Integer port = entry.getKey();
+                Map<String, String> serviceInfo = entry.getValue();
+                String serviceName = serviceInfo.getOrDefault("Service", "Desconocido");
+                listModel.addElement("Puerto " + port + ": " + serviceName);
+            }
+            JList<String> portsList = new JList<>(listModel);
             infoPanel.add(new JScrollPane(portsList), BorderLayout.CENTER);
         }
     
-        // Actualizar el panel
         infoPanel.revalidate();
         infoPanel.repaint();
     }
