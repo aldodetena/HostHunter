@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -226,7 +228,7 @@ public class ServiceIdentifier {
                 break;
             case 25565:
                 // Puerto estandar de Minecraft
-                serviceInfo = identifyFTPService(host, port);
+                serviceInfo = identifyMinecraftService(host, port);
                 break;
             
             default:
@@ -493,16 +495,46 @@ public class ServiceIdentifier {
     // Función para identificar servicios RPC
     public static Map<String, String> identifyRPCService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "RPC");
-            serviceInfo.put("Response", "Port is open, might be RPC");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Enviamos un paquete básico
+            byte[] sendData = "Hello RPC".getBytes();
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                serviceInfo.put("Service", "RPC");
+                serviceInfo.put("Response", "Received response from RPC service: " + response.trim());
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "RPC");
+                serviceInfo.put("Response", "No response from RPC service, port might be open but no RPC");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -569,16 +601,46 @@ public class ServiceIdentifier {
     // Función para identificar servicios MSRPC
     public static Map<String, String> identifyMSRPCService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "MSRPC");
-            serviceInfo.put("Response", "Port is open, might be MSRPC");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Enviamos un paquete básico
+            byte[] sendData = "Hello MSRPC".getBytes();
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                serviceInfo.put("Service", "MSRPC");
+                serviceInfo.put("Response", "Received response from MSRPC service: " + response.trim());
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "MSRPC");
+                serviceInfo.put("Response", "No response from MSRPC service, port might be open but no MSRPC");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -586,16 +648,43 @@ public class ServiceIdentifier {
     // Función para identificar servicios NetBIOS
     public static Map<String, String> identifyNetBIOSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "NetBIOS");
-            serviceInfo.put("Response", "Port is open, might be NetBIOS");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Mensaje de solicitud NetBIOS (esto es simplificado y debería ajustarse según la implementación real)
+            byte[] sendData = new byte[50]; // Buffer para el paquete NetBIOS Name Service
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(host), port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512]; // Suficiente para una respuesta típica de NetBIOS
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                serviceInfo.put("Service", "NetBIOS");
+                serviceInfo.put("Response", "Received response from NetBIOS service: " + response.trim());
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "NetBIOS");
+                serviceInfo.put("Response", "No response from NetBIOS service, port might be open but no NetBIOS");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -873,16 +962,46 @@ public class ServiceIdentifier {
     // Función para identificar servicios FileMaker
     public static Map<String, String> identifyFileMakerService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "FileMaker or other");
-            serviceInfo.put("Response", "Port is open, might be FileMaker or another service");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Suponer que enviamos un paquete básico
+            byte[] sendData = "Hello FileMaker".getBytes();
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                serviceInfo.put("Service", "FileMaker");
+                serviceInfo.put("Response", "Received response from FileMaker service: " + response.trim());
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "FileMaker");
+                serviceInfo.put("Response", "No response from FileMaker service, port might be open but no FileMaker");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -1096,16 +1215,47 @@ public class ServiceIdentifier {
     // Función para identificar servicios OpenVPN
     public static Map<String, String> identifyOpenVPNService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "OpenVPN");
-            serviceInfo.put("Response", "Port is open, might be OpenVPN");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Enviamos un paquete que podría ser reconocido por un servidor OpenVPN
+            // Este es un paquete de handshake inicial muy básico de OpenVPN
+            byte[] sendData = {0x38, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512]; // Tamaño suficiente para una respuesta típica de OpenVPN
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                // Si recibimos respuesta, hay alta probabilidad de que sea OpenVPN
+                serviceInfo.put("Service", "OpenVPN");
+                serviceInfo.put("Response", "Received response from OpenVPN service: possibly active");
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "OpenVPN");
+                serviceInfo.put("Response", "No response from OpenVPN service, port might be open but not responding");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -1132,32 +1282,44 @@ public class ServiceIdentifier {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
         try {
+            // Crear el socket UDP
             socket = new DatagramSocket();
-            socket.setSoTimeout(3000); // Establecer un tiempo de espera
-    
-            // Crear un paquete RADIUS de prueba (solicitud de acceso)
-            byte[] radiusRequest = new byte[20]; // Un paquete RADIUS simplificado
-            radiusRequest[0] = 1; // Tipo de mensaje (Solicitud de Acceso)
-            radiusRequest[1] = 1; // Identificador
-            // Los siguientes bytes incluirían la longitud y los atributos, pero se omiten para simplificar
-    
-            DatagramPacket packet = new DatagramPacket(radiusRequest, radiusRequest.length, InetAddress.getByName(host), port);
-            socket.send(packet);
-    
-            // Intentar recibir la respuesta
-            byte[] responseBuf = new byte[512];
-            DatagramPacket response = new DatagramPacket(responseBuf, responseBuf.length);
-            socket.receive(response);
-    
-            // Si recibimos una respuesta, asumimos que es un servicio RADIUS
-            serviceInfo.put("Service", "RADIUS");
-            serviceInfo.put("Response", "Received RADIUS response");
-        } catch (SocketTimeoutException e) {
-            serviceInfo.put("Service", "RADIUS");
-            serviceInfo.put("Response", "No response (RADIUS might still be present)");
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Construir un paquete RADIUS básico de Access-Request
+            byte[] sendData = new byte[20];
+            sendData[0] = 0x01; // Código de Access-Request
+            sendData[1] = 0x01; // Identificador
+            sendData[2] = 0x00; // Longitud (alta)
+            sendData[3] = (byte) sendData.length; // Longitud (baja)
+
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                serviceInfo.put("Service", "RADIUS");
+                serviceInfo.put("Response", "Received response from RADIUS service: possibly active");
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "RADIUS");
+                serviceInfo.put("Response", "No response from RADIUS service, port might be open but not responding");
+            }
+        } catch (UnknownHostException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
         } catch (IOException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
         } finally {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
@@ -1208,16 +1370,46 @@ public class ServiceIdentifier {
     // Función para identificar servicios NFS
     public static Map<String, String> identifyNFSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "NFS");
-            serviceInfo.put("Response", "Port is open, might be NFS");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Crear un paquete NFS básico de solicitud
+            // Por simplificación, se envía un paquete vacío como "ping"
+            byte[] sendData = new byte[10]; // Esto no es un paquete NFS válido, solo para propósitos de prueba
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512]; // Tamaño suficiente para una respuesta típica
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                serviceInfo.put("Service", "NFS");
+                serviceInfo.put("Response", "Received response from NFS service: possibly active");
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "NFS");
+                serviceInfo.put("Response", "No response from NFS service, port might be open but not responding");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -1275,16 +1467,45 @@ public class ServiceIdentifier {
     // Función para identificar servicios XBox Live
     public static Map<String, String> identifyXboxLiveService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port)) {
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
-    
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            serviceInfo.put("Service", "Xbox Live");
-            serviceInfo.put("Response", "Port is open, might be Xbox Live");
-        } catch (Exception e) {
+        DatagramSocket socket = null;
+        try {
+            // Crear el socket UDP
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Enviar un paquete UDP básico al host y puerto especificado
+            byte[] sendData = "Hello Xbox Live".getBytes();
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512]; // Tamaño suficiente para una respuesta típica
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                serviceInfo.put("Service", "Xbox Live");
+                serviceInfo.put("Response", "Received response from Xbox Live service: possibly active");
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "Xbox Live");
+                serviceInfo.put("Response", "No response from Xbox Live service, port might be open but not responding");
+            }
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
@@ -1353,22 +1574,39 @@ public class ServiceIdentifier {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
         try {
+            // Crear el socket UDP
             socket = new DatagramSocket();
-            socket.setSoTimeout(3000);
-    
-            byte[] buf = new byte[10]; // Un paquete UDP simplificado para eMule
-            DatagramPacket packet = new DatagramPacket(buf, buf.length, InetAddress.getByName(host), port);
-            socket.send(packet);
-    
-            // Intentar recibir la respuesta (en realidad, no esperamos una respuesta específica para UDP)
-            DatagramPacket response = new DatagramPacket(new byte[10], 10);
-            socket.receive(response);
-    
-            serviceInfo.put("Service", "eMule UDP");
-            serviceInfo.put("Response", "UDP Port is open, might be eMule");
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
+
+            // Crear un paquete UDP básico. En un escenario real, debería contener un mensaje de protocolo eMule adecuado.
+            byte[] sendData = "eMule ping".getBytes(); // Este es un mensaje simplificado y no un mensaje del protocolo eMule real.
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                serviceInfo.put("Service", "eMule");
+                serviceInfo.put("Response", "Received response from eMule service: possibly active");
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "eMule");
+                serviceInfo.put("Response", "No response from eMule service, port might be open but not responding");
+            }
+        } catch (UnknownHostException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
         } catch (IOException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
         } finally {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
@@ -1470,24 +1708,57 @@ public class ServiceIdentifier {
     // Función para identificar servicios BitTorrent
     public static Map<String, String> identifyBitTorrentService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
-        try (Socket socket = new Socket(host, port);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))){
-            // Establecer un tiempo de espera
-            socket.setSoTimeout(3000);
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000); // Establecer un tiempo de espera de 3 segundos
 
-            String response = in.readLine();
+            // Preparar un paquete de solicitud de connect para un tracker UDP
+            ByteBuffer sendData = ByteBuffer.allocate(16);
+            sendData.putLong(0x41727101980L); // connection_id mágico para la conexión inicial
+            sendData.putInt(0); // action (0 = connect)
+            sendData.putInt(new Random().nextInt()); // transaction_id
 
-            // Si la conexión es exitosa, asumimos que el puerto está abierto
-            if (response != null && response.contains("RFB")) {
-                serviceInfo.put("Service", "BitTorrent");
-                serviceInfo.put("Response", "Port is open, might be BitTorrent");
-            } else {
-                serviceInfo.put("Service", "Unknown or not VNC");
+            InetAddress address = InetAddress.getByName(host);
+
+            // Enviar el paquete
+            DatagramPacket sendPacket = new DatagramPacket(sendData.array(), sendData.position(), address, port);
+            socket.send(sendPacket);
+
+            // Preparar para recibir la respuesta
+            byte[] receiveData = new byte[512];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+            try {
+                socket.receive(receivePacket);  // Esperar la respuesta
+                ByteBuffer receiveBuffer = ByteBuffer.wrap(receivePacket.getData());
+                int action = receiveBuffer.getInt();
+                int transactionId = receiveBuffer.getInt();
+
+                if (action == 0 && transactionId == sendData.getInt(12)) { // Verifica action y transaction_id
+                    serviceInfo.put("Service", "BitTorrent Tracker");
+                    serviceInfo.put("Response", "Received valid response from BitTorrent Tracker: service is active");
+                } else {
+                    serviceInfo.put("Service", "BitTorrent Tracker");
+                    serviceInfo.put("Response", "Received invalid response from BitTorrent Tracker");
+                }
+            } catch (SocketTimeoutException e) {
+                serviceInfo.put("Service", "BitTorrent Tracker");
+                serviceInfo.put("Response", "No response from BitTorrent Tracker, port might be open but not responding");
             }
-
-        } catch (Exception e) {
+        } catch (UnknownHostException e) {
             serviceInfo.put("Service", "Error");
-            serviceInfo.put("ErrorMessage", e.getMessage());
+            serviceInfo.put("ErrorMessage", "Unknown host: " + e.getMessage());
+        } catch (SocketException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "Socket error: " + e.getMessage());
+        } catch (IOException e) {
+            serviceInfo.put("Service", "Error");
+            serviceInfo.put("ErrorMessage", "IO error: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         return serviceInfo;
     }
