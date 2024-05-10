@@ -45,8 +45,8 @@ public class NetworkScannerApp {
         networkPanelContainer = new JPanel();
         infoPanel = new JPanel();
         progressBar = new JProgressBar(0, 254); // Asumiendo que escaneas 254 hosts (1-254)
-        btnScanNetwork = new JButton("Scan Network");
-        btnCancelScan = new JButton("Cancel Scan");
+        btnScanNetwork = new JButton("Escanear Red");
+        btnCancelScan = new JButton("Cancelar Escaner");
         textArea = new JTextArea();
         scrollPane = new JScrollPane(textArea);
         networkPanelScrollPane = new JScrollPane(networkPanelContainer);
@@ -95,7 +95,7 @@ public class NetworkScannerApp {
         btnCancelScan.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 isScanning = false;
-                textArea.append("Scan cancelled.\n");
+                textArea.append("Escaneo Cancelado.\n");
             }
         });
     }
@@ -115,7 +115,7 @@ public class NetworkScannerApp {
                 try {
                     InetAddress address = InetAddress.getByName(hostAddress);
                     if (address.isReachable(1000)) {
-                        textArea.append("Host: " + hostAddress + " is reachable.\n");
+                        textArea.append("Host: " + hostAddress + " Es alcanzable.\n");
                         result.addReachableHost(hostAddress);
 
                          // Escanear puertos para el host alcanzable
@@ -139,7 +139,7 @@ public class NetworkScannerApp {
             for (NetworkInterface intf : Collections.list(interfaces)) {
                 if (!intf.isLoopback() && intf.isUp()) {
                     String subnetMask = getSubnetMask(intf);
-                    if (!subnetMask.equals("Unavailable")) {
+                    if (!subnetMask.equals("No disponible")) {
                         Enumeration<InetAddress> addresses = intf.getInetAddresses();
                         for (InetAddress addr : Collections.list(addresses)) {
                             if (addr.isSiteLocalAddress()) {
@@ -162,15 +162,15 @@ public class NetworkScannerApp {
             JTextField endPortField = new JTextField(5);
     
             JPanel panel = new JPanel();
-            panel.add(new JLabel("Select a network:"));
+            panel.add(new JLabel("Selecciona una red:"));
             panel.add(networkComboBox);
             panel.add(Box.createHorizontalStrut(15)); // Espaciado
-            panel.add(new JLabel("Start Port:"));
+            panel.add(new JLabel("Puerto Inicial:"));
             panel.add(startPortField);
-            panel.add(new JLabel("End Port:"));
+            panel.add(new JLabel("Puerto Final:"));
             panel.add(endPortField);
     
-            int result = JOptionPane.showConfirmDialog(frame, panel, "Network and Port Range Selection", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+            int result = JOptionPane.showConfirmDialog(frame, panel, "Rango de selección de puertos y red", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
     
             if (result == JOptionPane.OK_OPTION) {
                 selectedNetwork = (String) networkComboBox.getSelectedItem();
@@ -183,7 +183,7 @@ public class NetworkScannerApp {
                 }
             }
         } else {
-            textArea.append("No network interfaces found.\n");
+            textArea.append("No se encontraron interfaces de red.\n");
         }
     }
 
@@ -216,7 +216,7 @@ public class NetworkScannerApp {
             int part4 = (mask & 255);
             return part1 + "." + part2 + "." + part3 + "." + part4;
         } else {
-            return "Unavailable";
+            return "No disponible";
         }
     }
 
@@ -232,10 +232,10 @@ public class NetworkScannerApp {
                 socket.close();
                  // Identificar el servicio en el puerto abierto
                 ServiceIdentifier.getServiceInfo(hostAddress, finalPort, result);
-                EventQueue.invokeLater(() -> textArea.append("Host: " + hostAddress + " on port " + finalPort + " is open.\n"));
+                EventQueue.invokeLater(() -> textArea.append("Host: " + hostAddress + " en el puerto " + finalPort + " está abierto.\n"));
                 result.addOpenPort(hostAddress, finalPort);
             } catch (IOException e) {
-                textArea.append("Host: " + hostAddress + " on port " + finalPort + " is closed.\n");
+                textArea.append("Host: " + hostAddress + " en el puerto " + finalPort + " está cerrado.\n");
             }
         }
     }
@@ -297,7 +297,7 @@ public class NetworkScannerApp {
                 JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
                 JButton showPortsbButton = new JButton("Mostrar Puertos");
                 JButton showInfButton = new JButton("Mostrar Información");
-                JButton actionButton3 = new JButton("Acción 3");
+                JButton actionButton3 = new JButton("Sacar Informe");
     
                 buttonsPanel.add(showPortsbButton);
                 buttonsPanel.add(showInfButton);
@@ -309,10 +309,10 @@ public class NetworkScannerApp {
                     updatePortsInfoPanel(hostAddress, result);
                 });
                 showInfButton.addActionListener(e -> {
-                    updateHostInfoPanel(result, hostAddress);
+                    updateHostInfoPanel(hostAddress, result);
                 });
                 actionButton3.addActionListener(e -> {
-                    // Acción para el botón 3
+                    result.exportHostToHTML(hostAddress.toString());
                 });
     
                 networkPanelContainer.add(networkPanel);
@@ -322,16 +322,16 @@ public class NetworkScannerApp {
     }
 
     public void updatePortsInfoPanel(String hostAddress, NetworkScanResult result) {
-        infoPanel.removeAll(); // Eliminar contenido anterior
-    
-        infoPanel.add(new JLabel("Host: " + hostAddress), BorderLayout.NORTH);
-        infoPanel.setPreferredSize(new Dimension(250, frame.getHeight()));
-        infoPanel.setMinimumSize(new Dimension(250, 100));
+        infoPanel.removeAll();
+        JPanel infoPortsPanel = new JPanel();
+        infoPortsPanel.add(new JLabel("Host: " + hostAddress), BorderLayout.NORTH);
+        infoPortsPanel.setPreferredSize(new Dimension(250, frame.getHeight()));
+        infoPortsPanel.setMinimumSize(new Dimension(250, 100));
     
         Map<Integer, Map<String, String>> services = result.getServiceDetails(hostAddress);
         if (services.isEmpty()) {
             JLabel noPortsLabel = new JLabel("No se encontraron puertos abiertos.");
-            infoPanel.add(noPortsLabel, BorderLayout.CENTER);
+            infoPortsPanel.add(noPortsLabel, BorderLayout.CENTER);
         } else {
             DefaultListModel<String> listModel = new DefaultListModel<>();
             for (Map.Entry<Integer, Map<String, String>> entry : services.entrySet()) {
@@ -341,15 +341,16 @@ public class NetworkScannerApp {
                 listModel.addElement("Puerto " + port + ": " + serviceName);
             }
             JList<String> portsList = new JList<>(listModel);
-            infoPanel.add(new JScrollPane(portsList), BorderLayout.CENTER);
+            infoPortsPanel.add(new JScrollPane(portsList), BorderLayout.CENTER);
         }
     
-        infoPanel.revalidate();
-        infoPanel.repaint();
+        infoPanel.add(infoPortsPanel);
+        mainpanel.revalidate();
     }
 
-    public void updateHostInfoPanel(NetworkScanResult result, String hostAddress) {
-        infoPanel.removeAll(); // Eliminar contenido anterior
+    public void updateHostInfoPanel(String hostAddress, NetworkScanResult result) {
+        infoPanel.removeAll();
+        JPanel infoHostPanel = new JPanel();
     
         // Obtener la información del host
         List<String> hostInfo = result.getHostInfo(hostAddress);
@@ -359,11 +360,11 @@ public class NetworkScannerApp {
         infoList.setLayoutOrientation(JList.VERTICAL);
     
         // Añadir la JList al infoPanel
-        infoPanel.add(new JScrollPane(infoList), BorderLayout.CENTER);
+        infoHostPanel.add(new JScrollPane(infoList), BorderLayout.CENTER);
     
         // Actualizar el panel
-        infoPanel.revalidate();
-        infoPanel.repaint();
+        infoPanel.add(infoHostPanel);
+        mainpanel.revalidate();
     }
 
     public void show() {
