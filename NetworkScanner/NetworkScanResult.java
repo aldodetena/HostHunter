@@ -17,6 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Almacena y gestiona los resultados de un escaneo de red, incluyendo hosts alcanzables, puertos abiertos,
+ * y detalles de servicios para cada host.
+ */
 public class NetworkScanResult {
     String network;
     List<String> reachableHosts;
@@ -24,6 +28,10 @@ public class NetworkScanResult {
     Map<String, String> hostNames; // Almacenar los nombres de los hosts
     Map<String, Map<Integer, Map<String, String>>> serviceDetails; // Almacenar detalles de servicios
 
+    /**
+     * Constructor para crear un resultado de escaneo de red con una red específica.
+     * @param network La red sobre la que se realizó el escaneo.
+     */
     public NetworkScanResult(String network) {
         this.network = network;
         this.reachableHosts = new ArrayList<>();
@@ -32,6 +40,10 @@ public class NetworkScanResult {
         this.serviceDetails = new HashMap<>();
     }
 
+    /**
+     * Añade un host alcanzable al resultado del escaneo y prepara sus contenedores de datos relacionados.
+     * @param host La dirección IP del host alcanzable.
+     */
     public void addReachableHost(String host) {
         reachableHosts.add(host);
         openPorts.put(host, new ArrayList<>()); // Preparar para almacenar puertos abiertos
@@ -41,11 +53,21 @@ public class NetworkScanResult {
         hostNames.put(host, hostName);
     }
 
+    /**
+     * Registra un puerto abierto para un host específico.
+     * @param host La dirección IP del host.
+     * @param port El número de puerto abierto.
+     */
     public void addOpenPort(String host, int port) {
         openPorts.getOrDefault(host, new ArrayList<>()).add(port);
     }
 
-    // Método para añadir detalles de servicio
+    /**
+     * Añade detalles de un servicio asociados a un puerto específico de un host.
+     * @param host La dirección IP del host.
+     * @param port El puerto en el cual el servicio está corriendo.
+     * @param serviceInfo Un mapa con la información del servicio.
+     */
     public void addServiceDetails(String host, int port, Map<String, String> serviceInfo) {
         if (!serviceDetails.containsKey(host)) {
             serviceDetails.put(host, new HashMap<>());
@@ -53,11 +75,20 @@ public class NetworkScanResult {
         serviceDetails.get(host).put(port, serviceInfo);
     }
 
-    // Método para obtener los detalles del servicio para un host específico
+    /**
+     * Obtiene los detalles de servicio para un puerto específico de un host.
+     * @param host La dirección IP del host.
+     * @return Un mapa con los detalles del servicio por puerto.
+     */
     public Map<Integer, Map<String, String>> getServiceDetails(String host) {
         return serviceDetails.getOrDefault(host, new HashMap<>());
     }
 
+    /**
+     * Obtiene el nombre canónico del host dado su dirección IP.
+     * @param ipAddress La dirección IP del host.
+     * @return El nombre canónico del host o la dirección IP si el nombre no puede ser resuelto.
+     */
     private String getHostName(String ipAddress) {
         try {
             InetAddress inetAddress = InetAddress.getByName(ipAddress);
@@ -68,7 +99,11 @@ public class NetworkScanResult {
         }
     }
 
-    // Método para compilar y obtener la información del host
+    /**
+     * Compila y retorna la información básica del host, incluyendo su dirección IP y nombre de host.
+     * @param hostAddress La dirección IP del host.
+     * @return Una lista de cadenas representando la información del host.
+     */
     public List<String> getHostInfo(String hostAddress) {
         List<String> hostInfo = new ArrayList<>();
         String hostName = hostNames.getOrDefault(hostAddress, "Nombre desconocido");
@@ -78,7 +113,10 @@ public class NetworkScanResult {
         return hostInfo;
     }
 
-    // Método para exportar los datos a HTML
+    /**
+     * Exporta los resultados del escaneo de un host a un archivo HTML.
+     * @param hostAddress La dirección IP del host cuyos detalles se exportarán.
+     */
     public void exportHostToHTML(String hostAddress) {
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();

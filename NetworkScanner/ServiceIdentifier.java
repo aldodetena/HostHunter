@@ -17,8 +17,21 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+
+/**
+ * Identifica los servicios que se ejecutan en los puertos de un host especificado y almacena los detalles del servicio
+ * en el resultado del escaneo de red.
+ */
 public class ServiceIdentifier {
 
+    /**
+     * Identifica el servicio que se ejecuta en un puerto específico de un host y almacena los detalles obtenidos
+     * en el resultado del escaneo.
+     * 
+     * @param host La dirección IP del host a escanear.
+     * @param port El puerto del host a escanear.
+     * @param result La instancia de NetworkScanResult donde se almacenan los detalles del servicio.
+     */
     public static void getServiceInfo(String host, int port, NetworkScanResult result) {
         Map<String, String> serviceInfo;
         boolean ssl;
@@ -239,7 +252,13 @@ public class ServiceIdentifier {
         result.addServiceDetails(host, port, serviceInfo);
     }
 
-    // Función para identificar servicios FTP
+    /**
+     * Identifica y obtiene información de un servicio FTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     private static Map<String, String> identifyFTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -262,7 +281,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios SSH
+    /**
+     * Identifica y obtiene información de un servicio SSH corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     private static Map<String, String> identifySSHService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -288,7 +313,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios Telnet
+    /**
+     * Identifica y obtiene información de un servicio Telnet corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     private static Map<String, String> identifyTelnetService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket()) {
@@ -306,7 +337,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios SMTP
+    /**
+     * Identifica y obtiene información de un servicio SMTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     private static Map<String, String> identifySMTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket()) {
@@ -330,6 +367,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
+    /**
+     * Identifica y obtiene información de un servicio DNS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyDNSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -361,7 +405,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios DHCP
+    /**
+     * Identifica y obtiene información de un servicio DHCP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyDHCPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -394,7 +444,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios TFTP
+    /**
+     * Identifica y obtiene información de un servicio TFTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyTFTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -430,7 +486,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios HTTP
+    /**
+     * Identifica y obtiene información de un servicio HTTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     private static Map<String, String> identifyHTTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -467,7 +529,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios POP3
+    /**
+     * Identifica y obtiene información de un servicio POP3 corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyPOP3Service(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -492,7 +560,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios RPC
+    /**
+     * Identifica y obtiene información de un servicio RPC corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyRPCService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -539,7 +613,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios NNTP
+    /**
+     * Identifica y obtiene información de un servicio NNTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyNNTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -564,7 +644,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios NTP
+    /**
+     * Identifica y obtiene información de un servicio NTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyNTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -598,7 +684,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios MSRPC
+    /**
+     * Identifica y obtiene información de un servicio MSRPC corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyMSRPCService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -645,7 +737,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios NetBIOS
+    /**
+     * Identifica y obtiene información de un servicio NetBIOS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyNetBIOSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -689,7 +787,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios IMAP
+    /**
+     * Identifica y obtiene información de un servicio IMAP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyIMAPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -714,7 +818,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios SNMP
+    /**
+     * Identifica y obtiene información de un servicio SNMP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifySNMPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -747,7 +857,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios BGP
+    /**
+     * Identifica y obtiene información de un servicio BGP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyBGPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -764,7 +880,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios IRC
+    /**
+     * Identifica y obtiene información de un servicio IRC corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyIRCService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -789,7 +911,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios IMAP3
+    /**
+     * Identifica y obtiene información de un servicio IMAP3 corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyIMAP3Service(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -814,7 +942,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios LDAP
+    /**
+     * Identifica y obtiene información de un servicio LDAP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyLDAPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -831,7 +965,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios HTTPS
+    /**
+     * Identifica y obtiene información de un servicio HTTPS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio HTTPS.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     private static Map<String, String> identifyHTTPSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try {
@@ -876,7 +1016,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios SMTPS
+    /**
+     * Identifica y obtiene información de un servicio SMTPS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifySMTPSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         SSLSocket socket = null;
@@ -917,7 +1063,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios Rexec, Rlogin y Rsh
+    /**
+     * Identifica y obtiene información de un servicio Rexec/Rlogin/Rsh corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyRemoteService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -946,7 +1098,17 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios STMP o SMTPS en el puerto 587
+    /**
+     * Intenta identificar si un servicio SMTP o SMTPS está corriendo en un puerto específico de un host.
+     * Esta función primero intenta identificar SMTPS. Si la identificación inicial falla debido a un error,
+     * intenta identificar SMTP como alternativa.
+     *
+     * @param host La dirección IP del host a investigar.
+     * @param port El puerto en el host que se va a verificar, típicamente el puerto 587, usado tanto para SMTP como para SMTPS.
+     * @return Un mapa con los detalles del servicio identificado. Este incluye el tipo de servicio y cualquier mensaje de error si
+     *         la identificación falla. El mapa retornará con la clave "Service" indicando "SMTP", "SMTPS", o "Error" con un mensaje
+     *         adicional bajo la clave "ErrorMessage" si ocurre un error.
+     */
     public static Map<String, String> checkSMTPorSMTPSService(String host, int port) {
         Map<String, String> serviceInfo = identifySMTPSService(host, port);
     
@@ -959,7 +1121,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios FileMaker
+    /**
+     * Identifica y obtiene información de un servicio FileMaker corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyFileMakerService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1006,7 +1174,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios LDAPS
+    /**
+     * Identifica y obtiene información de un servicio LDAPS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyLDAPSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         SSLSocket socket = null;
@@ -1047,7 +1221,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios DoT
+    /**
+     * Identifica y obtiene información de un servicio DoT corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyDoTService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         SSLSocket socket = null;
@@ -1083,7 +1263,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios FTPS
+    /**
+     * Identifica y obtiene información de un servicio FTPS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyFTPSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         SSLSocket socket = null;
@@ -1130,7 +1316,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios IMAPS
+    /**
+     * Identifica y obtiene información de un servicio IMAPS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyIMAPSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         SSLSocket socket = null;
@@ -1171,7 +1363,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios POP3S
+    /**
+     * Identifica y obtiene información de un servicio POP3S corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyPOP3SService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         SSLSocket socket = null;
@@ -1212,7 +1410,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios OpenVPN
+    /**
+     * Identifica y obtiene información de un servicio OpenVPN corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyOpenVPNService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1260,7 +1464,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios PPTP
+    /**
+     * Identifica y obtiene información de un servicio PPTP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyPPTPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -1277,7 +1487,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios RADIUS
+    /**
+     * Identifica y obtiene información de un servicio RADIUS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyRADIUSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1328,7 +1544,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios RADIUS accounting
+    /**
+     * Identifica y obtiene información de un servicio RADIUSAccounting corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyRADIUSAccountingService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1367,7 +1589,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios NFS
+    /**
+     * Identifica y obtiene información de un servicio NFS corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyNFSService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1414,7 +1642,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios CPanel
+    /**
+     * Identifica y obtiene información de un servicio CPanel corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyCPanelService(String host, int port, boolean useSSL) {
         Map<String, String> serviceInfo = new HashMap<>();
         Socket socket = null;
@@ -1464,7 +1698,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios XBox Live
+    /**
+     * Identifica y obtiene información de un servicio XboxLive corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyXboxLiveService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1510,7 +1750,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios MYSQL
+    /**
+     * Identifica y obtiene información de un servicio MySQL corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyMySQLService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -1535,7 +1781,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios RDP
+    /**
+     * Identifica y obtiene información de un servicio RDP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyRDPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -1552,7 +1804,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios eMule TCP
+    /**
+     * Identifica y obtiene información de un servicio eMule bajo TCP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyeMuleTCPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -1569,7 +1827,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios eMule UDP
+    /**
+     * Identifica y obtiene información de un servicio eMule bajo UDP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyeMuleUDPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1615,7 +1879,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios Radmin
+    /**
+     * Identifica y obtiene información de un servicio Radmin corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyRadminService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port)) {
@@ -1632,7 +1902,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios UPnP
+    /**
+     * Identifica y obtiene información de un servicio UPnP corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyUPnPService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1680,7 +1956,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios VNC
+    /**
+     * Identifica y obtiene información de un servicio VNC corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyVNCService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -1705,7 +1987,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios BitTorrent
+    /**
+     * Identifica y obtiene información de un servicio BitTorrent corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyBitTorrentService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         DatagramSocket socket = null;
@@ -1763,7 +2051,13 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Función para identificar servicios Minecraft
+    /**
+     * Identifica y obtiene información de un servicio Minecraft corriendo en un host y puerto específicos.
+     * 
+     * @param host La dirección IP del host donde se ejecuta el servicio.
+     * @param port El puerto donde se espera que esté corriendo el servicio.
+     * @return Un mapa con los detalles del servicio, incluyendo el tipo de servicio y cualquier respuesta inicial.
+     */
     public static Map<String, String> identifyMinecraftService(String host, int port) {
         Map<String, String> serviceInfo = new HashMap<>();
         try (Socket socket = new Socket(host, port);
@@ -1791,7 +2085,15 @@ public class ServiceIdentifier {
         return serviceInfo;
     }
 
-    // Funciones relacionadas con la identificación de servicios de Minecraft
+    /**
+     * Envía un paquete de handshake al servidor de Minecraft especificado. Este paquete prepara la conexión para
+     * una solicitud de estado posterior.
+     * 
+     * @param out El DataOutputStream al que se escribe el paquete de handshake.
+     * @param host El nombre del host del servidor de Minecraft.
+     * @param port El puerto del servidor de Minecraft.
+     * @throws IOException Si ocurre un error de I/O durante el envío del paquete.
+     */
     private static void sendHandshake(DataOutputStream out, String host, int port) throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         DataOutputStream handshake = new DataOutputStream(buffer);
@@ -1807,6 +2109,14 @@ public class ServiceIdentifier {
         out.write(buffer.toByteArray()); // Enviar el paquete de handshake
     }
 
+    /**
+     * Escribe un entero en formato VarInt en el DataOutputStream proporcionado. VarInt es un método común de compresión
+     * numérica usado en Minecraft y otros protocolos.
+     * 
+     * @param out El DataOutputStream donde se escribe el VarInt.
+     * @param value El valor entero a escribir.
+     * @throws IOException Si ocurre un error de I/O durante la escritura.
+     */
     private static void writeVarInt(DataOutputStream out, int value) throws IOException {
         while ((value & -128) != 0) {
             out.writeByte(value & 127 | 128);
@@ -1815,11 +2125,24 @@ public class ServiceIdentifier {
         out.writeByte(value);
     }
 
+    /**
+     * Envía una solicitud de estado al servidor de Minecraft después de un handshake exitoso.
+     * 
+     * @param out El DataOutputStream al que se escribe la solicitud de estado.
+     * @throws IOException Si ocurre un error de I/O durante el envío de la solicitud.
+     */
     private static void sendStatusRequest(DataOutputStream out) throws IOException {
         out.writeByte(0x01); // Tamaño del paquete
         out.writeByte(0x00); // ID del paquete de solicitud de estado
     }
 
+    /**
+     * Lee la respuesta del servidor de Minecraft tras una solicitud de estado.
+     * 
+     * @param in El DataInputStream del que se lee la respuesta.
+     * @return La cadena con la respuesta del servidor, o null si el paquete no es de tipo respuesta.
+     * @throws IOException Si ocurre un error de I/O durante la lectura de la respuesta.
+     */
     private static String readResponse(DataInputStream in) throws IOException {
         readVarInt(in); // Longitud total del paquete
         int id = readVarInt(in);
@@ -1833,7 +2156,15 @@ public class ServiceIdentifier {
     
         return null;
     }
-    
+
+    /**
+     * Lee un entero en formato VarInt del DataInputStream proporcionado. VarInt es un método de compresión numérica
+     * que permite una representación eficiente de números enteros con un tamaño variable.
+     * 
+     * @param in El DataInputStream de donde se lee el VarInt.
+     * @return El entero descomprimido.
+     * @throws IOException Si ocurre un error de I/O durante la lectura.
+     */
     private static int readVarInt(DataInputStream in) throws IOException {
         int numRead = 0;
         int result = 0;

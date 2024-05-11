@@ -18,6 +18,10 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * Clase principal de la aplicación NetworkScannerApp que proporciona una interfaz gráfica para
+ * escanear redes y puertos, así como identificar servicios en hosts específicos.
+ */
 public class NetworkScannerApp {
 
     private JFrame frame;
@@ -35,10 +39,16 @@ public class NetworkScannerApp {
     private Queue<NetworkScanTask> networkQueue = new LinkedList<>();
     private List<NetworkScanResult> scanResults = new ArrayList<>();
 
+    /**
+     * Constructor que inicializa la interfaz de usuario y configura los componentes de la ventana.
+     */
     public NetworkScannerApp() {
         initialize();
     }
 
+    /**
+     * Inicializa los componentes de la interfaz gráfica de usuario y configura los manejadores de eventos.
+     */
     private void initialize() {
         frame = new JFrame();
         mainpanel = new JPanel();
@@ -55,6 +65,7 @@ public class NetworkScannerApp {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setLayout(new BorderLayout(0, 0));
         frame.setResizable(true); // Permitir redimensionamiento
+        textArea.setEditable(false);  // Hacer que el JTextArea no sea editable
         progressBar.setValue(0);
         progressBar.setStringPainted(true); // Para mostrar el porcentaje de progreso
         btnCancelScan.setEnabled(false); // Inicialmente deshabilitado
@@ -100,11 +111,19 @@ public class NetworkScannerApp {
         });
     }
 
+    /**
+     * Inicia un nuevo escaneo de red en un hilo separado.
+     *
+     * @param textArea El área de texto donde se mostrarán los resultados.
+     * @param network La dirección de red a escanear.
+     * @param startPort El puerto inicial del rango a escanear.
+     * @param endPort El puerto final del rango a escanear.
+     */
     private void scanNetwork(JTextArea textArea, String network, int startPort, int endPort) {
         new Thread(() -> {
             NetworkScanResult result = new NetworkScanResult(network);
     
-            for (int host = 1; host <= 30; host++) {
+            for (int host = 1; host <= 254; host++) {
                 if (!isScanning) {
                     break;
                 }
@@ -132,6 +151,9 @@ public class NetworkScannerApp {
         }).start();
     }
 
+    /**
+     * Lista todas las interfaces de red disponibles y permite al usuario seleccionar una para el escaneo.
+     */
     public void listNetworkInterfaces() {
         List<String> networkAddresses = new ArrayList<>();
         try {
@@ -187,6 +209,13 @@ public class NetworkScannerApp {
         }
     }
 
+    /**
+     * Calcula la dirección de red basada en la dirección IP y la máscara de subred.
+     *
+     * @param ipAddress La dirección IP.
+     * @param subnetMask La máscara de subred.
+     * @return La dirección de red calculada.
+     */
     private String calculateNetworkAddress(String ipAddress, String subnetMask) {
         String[] ipParts = ipAddress.split("\\.");
         String[] maskParts = subnetMask.split("\\.");
@@ -205,21 +234,39 @@ public class NetworkScannerApp {
         return networkAddress.toString();
     }
 
+    /**
+     * Calcula la máscara de subred para una interfaz de red dada, basada en su longitud de prefijo de red.
+     * Esta función convierte la longitud de prefijo en una representación de máscara de subred decimal
+     * (por ejemplo, 24 -> 255.255.255.0).
+     *
+     * @param networkInterface La interfaz de red cuya máscara de subred se va a calcular.
+     * @return La máscara de subred en formato decimal con puntos (p.ej., "255.255.255.0") o "No disponible"
+     *         si la interfaz no tiene direcciones configuradas.
+     * @throws SocketException Si se produce un error al acceder a las propiedades de la interfaz de red.
+     */
     private static String getSubnetMask(NetworkInterface networkInterface) throws SocketException {
-        // Verifica si la lista de InterfaceAddress no está vacía
         if (!networkInterface.getInterfaceAddresses().isEmpty()) {
             int prefixLength = networkInterface.getInterfaceAddresses().get(0).getNetworkPrefixLength();
-            int mask = -1 << (32 - prefixLength);
-            int part1 = ((mask >>> 24) & 255);
-            int part2 = ((mask >>> 16) & 255);
-            int part3 = ((mask >>> 8) & 255);
-            int part4 = (mask & 255);
-            return part1 + "." + part2 + "." + part3 + "." + part4;
+            int mask = -1 << (32 - prefixLength);  // Cálculo de la máscara de subred utilizando el desplazamiento de bits
+            int part1 = ((mask >>> 24) & 255);  // Extraer el primer octeto
+            int part2 = ((mask >>> 16) & 255);  // Extraer el segundo octeto
+            int part3 = ((mask >>> 8) & 255);   // Extraer el tercer octeto
+            int part4 = (mask & 255);           // Extraer el cuarto octeto
+            return part1 + "." + part2 + "." + part3 + "." + part4;  // Formato de notación decimal con puntos
         } else {
-            return "No disponible";
+            return "No disponible";  // Devuelve esto si la interfaz no tiene direcciones
         }
     }
 
+    /**
+     * Escanea los puertos de un host específico y registra los puertos abiertos.
+     *
+     * @param hostAddress La dirección IP del host.
+     * @param startPort El puerto inicial del rango a escanear.
+     * @param endPort El puerto final del rango a escanear.
+     * @param textArea El área de texto donde se mostrarán los resultados.
+     * @param result El objeto donde se almacenan los resultados del escaneo.
+     */
     private void scanHostPorts(String hostAddress, int startPort, int endPort, JTextArea textArea, NetworkScanResult result) {
         for (int port = startPort; port <= endPort; port++) {
             if (!isScanning) {
@@ -240,6 +287,16 @@ public class NetworkScannerApp {
         }
     }
 
+    /**
+     * Recupera una lista de puertos abiertos para un host específico dentro de una red dada.
+     * Esta función busca en los resultados de escaneos previos para encontrar la red y el host especificados
+     * y compila una lista de descripciones de puertos abiertos.
+     *
+     * @param network La dirección de red o el identificador de la red en la cual se encuentra el host.
+     * @param hostAddress La dirección IP del host cuyos puertos abiertos se desean listar.
+     * @return Una lista de cadenas, cada una representando un puerto abierto con la etiqueta "Puerto Abierto:" seguida del número de puerto.
+     *         Si no se encuentran puertos abiertos, la lista será vacía.
+     */
     public List<String> getOpenPortsInfoForHost(String network, String hostAddress) {
         List<String> openPortsInfo = new ArrayList<>();
     
@@ -258,6 +315,15 @@ public class NetworkScannerApp {
         return openPortsInfo;
     }
 
+    /**
+     * Procesa la siguiente tarea de escaneo de red en la cola. Si la cola no está vacía, extrae la tarea siguiente
+     * y comienza el escaneo de la red especificada. Si la cola está vacía, limpia el área de texto y muestra
+     * los resultados del escaneo anterior.
+     *
+     * Este método gestiona la transición entre las tareas de escaneo activas y también actualiza la interfaz
+     * de usuario una vez que todas las tareas han sido procesadas, reactivando el botón de escaneo y desactivando
+     * el botón de cancelación.
+     */
     private void processNextNetwork() {
         if (!networkQueue.isEmpty()) {
             NetworkScanTask task = networkQueue.poll();
@@ -274,12 +340,20 @@ public class NetworkScannerApp {
         }
     }
 
+    /**
+     * Muestra los resultados del escaneo de red.
+     */
     private void displayScanResults() {
         for (NetworkScanResult result : scanResults) {
             displayNetworkResult(result);
         }
     }
     
+    /**
+     * Muestra los resultados del escaneo para una red específica.
+     *
+     * @param result El resultado del escaneo que se mostrará.
+     */
     private void displayNetworkResult(NetworkScanResult result) {
         SwingUtilities.invokeLater(() -> {
             for (String hostAddress : result.reachableHosts) {
@@ -294,14 +368,28 @@ public class NetworkScannerApp {
                 networkPanel.add(infoLabel);
     
                 // Panel para botones
-                JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+                JPanel buttonsPanel = new JPanel();
+                buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.Y_AXIS));
                 JButton showPortsbButton = new JButton("Mostrar Puertos");
                 JButton showInfButton = new JButton("Mostrar Información");
-                JButton actionButton3 = new JButton("Sacar Informe");
+                JButton reportButton = new JButton("Sacar Informe");
+
+                // Configurar la alineación central y agregar a panel
+                showPortsbButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+                showInfButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+                reportButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Establecer el tamaño máximo de los botones basado en el botón más grande
+                Dimension maxButtonSize = new Dimension(Integer.MAX_VALUE, showPortsbButton.getPreferredSize().height);
+                showPortsbButton.setMaximumSize(maxButtonSize);
+                showInfButton.setMaximumSize(maxButtonSize);
+                reportButton.setMaximumSize(maxButtonSize);
     
                 buttonsPanel.add(showPortsbButton);
+                buttonsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
                 buttonsPanel.add(showInfButton);
-                buttonsPanel.add(actionButton3);
+                buttonsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+                buttonsPanel.add(reportButton);
                 networkPanel.add(buttonsPanel); // Añadir el panel de botones
     
                 // Añadir eventos a los botones si es necesario
@@ -311,7 +399,7 @@ public class NetworkScannerApp {
                 showInfButton.addActionListener(e -> {
                     updateHostInfoPanel(hostAddress, result);
                 });
-                actionButton3.addActionListener(e -> {
+                reportButton.addActionListener(e -> {
                     result.exportHostToHTML(hostAddress.toString());
                 });
     
@@ -321,16 +409,26 @@ public class NetworkScannerApp {
         });
     }
 
+    /**
+     * Actualiza el panel de información de puertos mostrando los servicios disponibles en los puertos abiertos
+     * de un host específico. Este método construye una lista visual de puertos y sus servicios asociados para
+     * su exhibición en el panel de información.
+     *
+     * Si no se encuentran puertos abiertos, el panel mostrará un mensaje indicando que no se encontraron puertos.
+     * Si se encuentran puertos abiertos, mostrará una lista de los puertos y los nombres de los servicios corriendo en ellos.
+     *
+     * @param hostAddress La dirección IP del host cuyos detalles de puertos se van a mostrar.
+     * @param result El objeto NetworkScanResult que contiene la información de los puertos y servicios del host especificado.
+     */
     public void updatePortsInfoPanel(String hostAddress, NetworkScanResult result) {
         infoPanel.removeAll();
         JPanel infoPortsPanel = new JPanel();
-        infoPortsPanel.add(new JLabel("Host: " + hostAddress), BorderLayout.NORTH);
-        infoPortsPanel.setPreferredSize(new Dimension(250, frame.getHeight()));
-        infoPortsPanel.setMinimumSize(new Dimension(250, 100));
+        infoPortsPanel.setMinimumSize(new Dimension(300, 100));
     
         Map<Integer, Map<String, String>> services = result.getServiceDetails(hostAddress);
         if (services.isEmpty()) {
             JLabel noPortsLabel = new JLabel("No se encontraron puertos abiertos.");
+            infoPortsPanel.setPreferredSize(new Dimension(300, frame.getHeight()));
             infoPortsPanel.add(noPortsLabel, BorderLayout.CENTER);
         } else {
             DefaultListModel<String> listModel = new DefaultListModel<>();
@@ -341,6 +439,7 @@ public class NetworkScannerApp {
                 listModel.addElement("Puerto " + port + ": " + serviceName);
             }
             JList<String> portsList = new JList<>(listModel);
+            infoPortsPanel.setPreferredSize(new Dimension(170, frame.getHeight()));
             infoPortsPanel.add(new JScrollPane(portsList), BorderLayout.CENTER);
         }
     
@@ -348,6 +447,14 @@ public class NetworkScannerApp {
         mainpanel.revalidate();
     }
 
+    /**
+     * Actualiza el panel de información del host mostrando detalles específicos sobre un host individual. 
+     * Esta función construye una lista visual con información detallada sobre el host, como su dirección IP, 
+     * nombre de host, y otros detalles relevantes, y la muestra en el panel de información.
+     *
+     * @param hostAddress La dirección IP del host cuyos detalles se van a mostrar.
+     * @param result El objeto NetworkScanResult que contiene la información detallada del host especificado.
+     */
     public void updateHostInfoPanel(String hostAddress, NetworkScanResult result) {
         infoPanel.removeAll();
         JPanel infoHostPanel = new JPanel();
@@ -367,6 +474,9 @@ public class NetworkScannerApp {
         mainpanel.revalidate();
     }
 
+    /**
+     * Hace visible la ventana principal de la aplicación.
+     */
     public void show() {
         frame.setVisible(true);
     }
