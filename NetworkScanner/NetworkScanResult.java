@@ -9,9 +9,12 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import java.io.File;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,14 +92,49 @@ public class NetworkScanResult {
      * @param ipAddress La dirección IP del host.
      * @return El nombre canónico del host o la dirección IP si el nombre no puede ser resuelto.
      */
-    private String getHostName(String ipAddress) {
+    public static String getHostName(String ipAddress) {
         try {
             InetAddress inetAddress = InetAddress.getByName(ipAddress);
-            return inetAddress.getCanonicalHostName();
-        } catch (Exception e) {
-            e.printStackTrace();
+            String hostName = inetAddress.getHostName();
+            if (hostName.equals(ipAddress)) {
+                // Si getHostName() devuelve la misma IP, intentar con getCanonicalHostName()
+                hostName = inetAddress.getCanonicalHostName();
+            }
+            return hostName;
+        } catch (UnknownHostException e) {
+            System.err.println("No se pudo resolver el nombre de host para la dirección IP: " + ipAddress);
             return ipAddress; // Devuelve la dirección IP si no se puede resolver el nombre
         }
+    }
+
+    public static String identifyOS(String ipAddress) {
+        String osType = "Desconocido";
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("ping", "-c", "1", ipAddress);
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("ttl=")) {
+                    int ttlIndex = line.indexOf("ttl=");
+                    String ttlValue = line.substring(ttlIndex + 4, line.indexOf(" ", ttlIndex));
+                    int ttl = Integer.parseInt(ttlValue);
+
+                    if (ttl <= 64) {
+                        osType = "Unix/Linux";
+                    } else if (ttl <= 128) {
+                        osType = "Windows";
+                    } else if (ttl > 128) {
+                        osType = "Otros";
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return osType;
     }
 
     /**

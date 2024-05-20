@@ -461,6 +461,10 @@ public class NetworkScannerApp {
     
         // Obtener la información del host
         List<String> hostInfo = result.getHostInfo(hostAddress);
+
+        // Llamar a la función identifyOS y agregar el resultado a la lista de información
+        String osInfo = NetworkScanResult.identifyOS(hostAddress);
+        hostInfo.add("Sistema Operativo: " + osInfo);
     
         // Crear y configurar la JList
         JList<String> infoList = new JList<>(hostInfo.toArray(new String[0]));
