@@ -28,7 +28,7 @@ Para desplegar y ejecutar HostHunter en tu entorno local, sigue estos pasos:
 1. **Clona el repositorio:**
 
    ```bash
-   git clone https://github.com/HostHunter.git
+   git clone [https://github.com/HostHunter.git](https://github.com/aldodetena/HostHunter)
    ```
 
 2. **Navega al directorio del proyecto**
