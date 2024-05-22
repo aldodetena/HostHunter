@@ -1,6 +1,8 @@
 package NetworkScanner;
 
 import javax.swing.*;
+import javax.swing.text.NumberFormatter;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -10,6 +12,8 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -180,9 +184,22 @@ public class NetworkScannerApp {
     
         if (!networkAddresses.isEmpty()) {
             JComboBox<String> networkComboBox = new JComboBox<>(networkAddresses.toArray(new String[0]));
-            JTextField startPortField = new JTextField(5);
-            JTextField endPortField = new JTextField(5);
-    
+
+            // Crear un NumberFormatter que permita solo enteros
+            NumberFormat format = NumberFormat.getIntegerInstance();
+            format.setGroupingUsed(false);
+            NumberFormatter numberFormatter = new NumberFormatter(format);
+            numberFormatter.setValueClass(Integer.class);
+            numberFormatter.setAllowsInvalid(false); // No permitir entradas no válidas
+            numberFormatter.setMinimum(0); // Valor mínimo permitido
+            numberFormatter.setMaximum(65535); // Valor máximo permitido
+
+            // Crear JFormattedTextFields con el NumberFormatter
+            JFormattedTextField startPortField = new JFormattedTextField(numberFormatter);
+            startPortField.setColumns(5);
+            JFormattedTextField endPortField = new JFormattedTextField(numberFormatter);
+            endPortField.setColumns(5);
+
             JPanel panel = new JPanel();
             panel.add(new JLabel("Selecciona una red:"));
             panel.add(networkComboBox);
@@ -191,18 +208,31 @@ public class NetworkScannerApp {
             panel.add(startPortField);
             panel.add(new JLabel("Puerto Final:"));
             panel.add(endPortField);
-    
+
             int result = JOptionPane.showConfirmDialog(frame, panel, "Rango de selección de puertos y red", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-    
+
             if (result == JOptionPane.OK_OPTION) {
                 selectedNetwork = (String) networkComboBox.getSelectedItem();
-                int startPort = Integer.parseInt(startPortField.getText());
-                int endPort = Integer.parseInt(endPortField.getText());
-                NetworkScanTask task = new NetworkScanTask(selectedNetwork, startPort, endPort);
-                networkQueue.add(task); // Añade la tarea a la cola
-                if (networkQueue.size() == 1) {
-                    processNextNetwork();
+                try {
+                    startPortField.commitEdit(); // Asegurarse de que el valor sea válido
+                    endPortField.commitEdit();   // Asegurarse de que el valor sea válido
+
+                    int startPort = ((Number) startPortField.getValue()).intValue();
+                    int endPort = ((Number) endPortField.getValue()).intValue();
+
+                    NetworkScanTask task = new NetworkScanTask(selectedNetwork, startPort, endPort);
+                    networkQueue.add(task); // Añade la tarea a la cola
+                    if (networkQueue.size() == 1) {
+                        processNextNetwork();
+                    }
+                } catch (ParseException e) {
+                    JOptionPane.showMessageDialog(frame, "Por favor, ingrese un número válido.", "Error", JOptionPane.ERROR_MESSAGE);
+                    btnScanNetwork.setEnabled(true);
+                    btnCancelScan.setEnabled(false);
                 }
+            } else if (result == JOptionPane.CANCEL_OPTION) {
+                btnScanNetwork.setEnabled(true);
+                btnCancelScan.setEnabled(false);
             }
         } else {
             textArea.append("No se encontraron interfaces de red.\n");
