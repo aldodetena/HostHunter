@@ -179,6 +179,12 @@ public class NetworkScanResult {
             h1.appendChild(doc.createTextNode("Informe de escaneo de red del Host: " + hostAddress));
             body.appendChild(h1);
 
+            // Obtener el sistema operativo
+            String osInfo = identifyOS(hostAddress);
+            Element h2 = doc.createElement("h2");
+            h2.appendChild(doc.createTextNode("Sistema Operativo: " + osInfo));
+            body.appendChild(h2);
+
             if (reachableHosts.contains(hostAddress)) {
                 Element table = doc.createElement("table");
                 body.appendChild(table);
